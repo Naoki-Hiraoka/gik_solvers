@@ -27,6 +27,7 @@
 - git:
     local-name: ompl_near_projection
     uri: https://github.com/Naoki-Hiraoka/ompl_near_projection.git
+    version: 1.0
 
 - git:
     local-name: choreonoid_viewer
