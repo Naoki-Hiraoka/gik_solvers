@@ -150,7 +150,7 @@ namespace global_inverse_kinematics_solver{
                 const std::vector<std::shared_ptr<std::vector<std::vector<double> > > >& path,
                 bool findAllSolution){
     std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > rejections(variables.size());
-    solveGIK(variables, constraints, goals, nominals, rejections, modelQueue, param, path, findAllSolution);
+    return solveGIK(variables, constraints, goals, nominals, rejections, modelQueue, param, path, findAllSolution);
   }
 
 

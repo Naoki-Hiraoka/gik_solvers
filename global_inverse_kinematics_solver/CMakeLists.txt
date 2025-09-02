@@ -28,6 +28,10 @@ include_directories(
  ${OMPL_INCLUDE_DIRS}
 )
 
+link_directories(
+ ${OMPL_LIBRARY_DIRS}
+)
+
 add_library(${PROJECT_NAME}
   src/global_inverse_kinematics_solver.cpp
   src/GIKConstraint.cpp
