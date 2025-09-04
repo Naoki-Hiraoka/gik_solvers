@@ -26,6 +26,10 @@ include_directories(
  ${OMPL_INCLUDE_DIRS}
 )
 
+link_directories(
+ ${OMPL_LIBRARY_DIRS}
+)
+
 add_executable(SampleSR1
   src/SampleSR1.cpp
 )
