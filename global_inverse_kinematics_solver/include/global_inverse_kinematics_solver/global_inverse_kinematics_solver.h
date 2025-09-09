@@ -37,6 +37,15 @@ namespace global_inverse_kinematics_solver{
     prioritized_inverse_kinematics_solver2::IKParam pikParam;
     double nearMaxError = 0.05; // sampleNear時のjointAngleConstraintのmaxError. // 大きいとタスクが達成できない場合に不安定になりやすいが、小さいとIKのloopが多く必要になって遅くなる. 各constraintのmaxErrorも同じ値にせよ
 
+    // post processing
+    double preShortcutThre = 0.08; // 1つ手前のnodeと1つ後ろのnodeの全ての状態変数の値の差がそれぞれこの値以下である場合、そのnodeは削除される.
+    double displacementThre = 0.08; // 一回の最適化での変位上限
+    double postShortcutThre = 0.08; // 1つ手前のnodeと1つ後ろのnodeの全ての状態変数の値の差がそれぞれこの値以下である場合、そのnodeは削除される.
+    prioritized_inverse_kinematics_solver2::IKParam postpikParam;
+    double postpikParam_wmaxVec1 = 1e-1; // その他要素
+    double postpikParam_wmaxVec2 = 1e-6; // 末尾要素
+    double postpikParam_convergeThre = 1e-1; // この値掛けるsqrt(path.size())
+
     GIKParam(){
       pikParam.we = 1e2; // 逆運動学が振動しないこと優先. 1e0だと不安定. 1e3だと大きすぎる
       pikParam.maxIteration = 100; // max iterationに達するか、convergeしたら終了する. isSatisfiedでは終了しない. ゼロ空間でreference angleに可能な限り近づけるタスクがあるので. 1 iterationで0.5msくらいかかるので、stateを1つ作るための時間の上限が見積もれる. 一見、この値を小さくすると早くなりそうだが、goalSampling時に本当はgoalに到達できるのにその前に返ってしまうことで遅くなることがあるため、少ないiterationでも収束するように他のパラメータを調整したほうがいい
@@ -44,6 +53,12 @@ namespace global_inverse_kinematics_solver{
       pikParam.checkFinalState = true; // ゼロ空間でreference angleに可能な限り近づけるタスクのprecitionは大きくして、常にsatisfiedになることに注意
       pikParam.calcVelocity = false; // 疎な軌道生成なので、velocityはチェックしない
       pikParam.convergeThre = 2.5e-2; // 要パラチューン. IKConsraintのmaxErrorより小さくないと、収束誤判定する. maxErrorが5e-2の場合、5e-2だと大きすぎる. 5e-3だと小さすぎて時間がかかる. ikのwe, wn, wmax, maxErrorといったパラメータと連動してパラチューンせよ.
+
+
+      postpikParam.we = 1e2;
+      postpikParam.maxIteration = 50;
+      postpikParam.minIteration = 0;
+      postpikParam.calcVelocity = false; // 疎な軌道生成なので、velocityはチェックしない
     }
   };
 
@@ -133,6 +148,13 @@ namespace global_inverse_kinematics_solver{
                 std::shared_ptr<UintQueue> modelQueue,
                 const GIKParam& param,
                 std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
+
+
+  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   std::shared_ptr<std::vector<std::vector<double> > >& path,
+                   const GIKParam& param = GIKParam()); // 0: states. 1: angles
+
 }
 
 #endif

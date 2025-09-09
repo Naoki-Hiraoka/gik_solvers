@@ -579,4 +579,218 @@ namespace global_inverse_kinematics_solver{
     return solved == ompl::base::PlannerStatus::EXACT_SOLUTION;
   }
 
+
+
+  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   std::shared_ptr<std::vector<std::vector<double> > >& path,
+                   const GIKParam& param) // 0: states. 1: angles
+  {
+    // 先頭要素と末尾要素は固定する.
+
+    if(param.debugLevel >=2){
+      std::cerr << "start post process. path size: " << path->size() << std::endl;
+    }
+    if(path->size() <= 2) return true;
+
+    // shortcut.
+    for(int i=1;i+1<path->size();){
+      bool cut = true;
+      int idx = 0;
+      for(int l=0;l<variables.size();l++){
+        if(variables[l]->isRevoluteJoint() || variables[l]->isPrismaticJoint()) {
+          if (std::abs((*path)[i-1][idx] - (*path)[i+1][idx]) > param.preShortcutThre) {
+            cut = false;
+            break;
+          }
+          idx++;
+        } else if(variables[l]->isFreeJoint()) {
+          cnoid::Quaternion prevQ((*path)[i-1][idx+6], (*path)[i-1][idx+3], (*path)[i-1][idx+4], (*path)[i-1][idx+5]);
+          cnoid::Quaternion nextQ((*path)[i+1][idx+6], (*path)[i+1][idx+3], (*path)[i+1][idx+4], (*path)[i+1][idx+5]);
+          cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
+          cnoid::Matrix3 nextR = nextQ.toRotationMatrix();
+          cnoid::AngleAxis diffAngleAxis = cnoid::AngleAxis(nextR * prevR.transpose());
+          if ((std::abs((*path)[i-1][idx+0] - (*path)[i+1][idx+0]) > param.preShortcutThre) ||
+              (std::abs((*path)[i-1][idx+1] - (*path)[i+1][idx+1]) > param.preShortcutThre) ||
+              (std::abs((*path)[i-1][idx+2] - (*path)[i+1][idx+2]) > param.preShortcutThre) ||
+              (std::abs(diffAngleAxis.angle()) > param.preShortcutThre)) {
+            cut = false;
+            break;
+          }
+          idx+=7;
+        }
+      }
+      if (cut) {
+        path->erase(path->begin() + i);
+      } else {
+        i++;
+      }
+    }
+    if(param.debugLevel >=2){
+      std::cerr << "after shortcut. path size: " << path->size() << std::endl;
+    }
+    if(path->size() <= 2) return true;
+
+
+    // optimize
+    {
+      std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
+      std::vector<cnoid::LinkPtr> variablesAll;
+      std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintsAll(constraints.size());
+      std::set<cnoid::BodyPtr> bodies = getBodies(variables);
+      for (int i=0; i< path->size(); i++){
+        std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
+        for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
+          modelMap[*it] = (*it)->clone();
+        }
+        modelMaps.push_back(modelMap); // cloneしたbodyがデストラクトされないように、保管しておく
+
+        std::vector<cnoid::LinkPtr> variablesNext;
+        for(int v=0;v<variables.size();v++){
+          variablesNext.push_back(modelMap[variables[v]->body()]->link(variables[v]->index()));
+        }
+        global_inverse_kinematics_solver::frame2Link((*path)[i],variablesNext);
+        variablesAll.insert(variablesAll.end(), variablesNext.begin(), variablesNext.end());
+        for(int j=0;j<constraints.size();j++){
+          for(int k=0;k<constraints[j].size();k++){
+            constraintsAll[j].push_back(constraints[j][k]->clone(modelMap));
+          }
+        }
+      }
+
+      {
+        // start configuration
+        for(int v=0;v<variables.size();v++) {
+          if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
+            std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
+            constraint->A_joint() = variablesAll[v];
+            constraint->B_q() = variablesAll[v]->q();
+            constraint->precision() = 1e-3;
+            constraint->maxError() = 1e10;
+            constraintsAll.back().push_back(constraint);
+          }else if(variables[v]->isFreeJoint()) {
+            std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
+            constraint->A_link() = variablesAll[v];
+            constraint->B_localpos() = variablesAll[v]->T();
+            constraint->precision() = 1e-3;
+            constraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
+            constraintsAll.back().push_back(constraint);
+          }else{
+            std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
+          }
+        }
+        // goal configuration
+        // for(int k=0;k<goals.size();k++){
+        //   constraintsAll.back().push_back(goals[k]->clone(modelMaps.back()));
+        // }
+        for(int v=0;v<variables.size();v++) {
+          if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
+            std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
+            constraint->A_joint() = variablesAll[v + variables.size() * (path->size()-1)];
+            constraint->B_q() = variablesAll[v + variables.size() * (path->size()-1)]->q();
+            constraint->precision() = 1e-3;
+            constraint->maxError() = 1e10;
+            constraintsAll.back().push_back(constraint);
+          }else if(variables[v]->isFreeJoint()) {
+            std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
+            constraint->A_link() = variablesAll[v + variables.size() * (path->size()-1)];
+            constraint->B_localpos() = variablesAll[v + variables.size() * (path->size()-1)]->T();
+            constraint->precision() = 1e-3;
+            constraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
+            constraintsAll.back().push_back(constraint);
+          }else{
+            std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
+          }
+        }
+        // displacement limit
+        for (int i=0; i<path->size(); i++) {
+          for(int v=0;v<variables.size();v++) {
+            if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint() || variables[v]->isFreeJoint()){
+              std::shared_ptr<ik_constraint2::JointDisplacementConstraint> constraint = std::make_shared<ik_constraint2::JointDisplacementConstraint>();
+              constraint->joint() = variablesAll[v + i*variables.size()];
+              constraint->limit() = param.displacementThre;
+              constraintsAll.back().push_back(constraint);
+            }
+          }
+        }
+        // adjacent configuration
+        constraintsAll.resize(constraintsAll.size()+1);
+        for (int i=0; i+1<path->size(); i++) {
+          for(int v=0;v<variables.size();v++) {
+            if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
+              std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
+              constraint->A_joint() = variablesAll[v + i*variables.size()];
+              constraint->B_joint() = variablesAll[v + (i+1)*variables.size()];
+              constraint->precision() = 1e-3; // never satisfied
+              constraint->maxError() = 1e10;
+              constraintsAll.back().push_back(constraint);
+            }else if(variables[v]->isFreeJoint()) {
+              std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
+              constraint->A_link() = variablesAll[v + i*variables.size()];
+              constraint->B_link() = variablesAll[v + (i+1)*variables.size()];
+              constraint->precision() = 1e-3; // never satisfied
+              constraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
+              constraintsAll.back().push_back(constraint);
+            }else{
+              std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
+            }
+          }
+        }
+      }
+      std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
+      prioritized_inverse_kinematics_solver2::IKParam pikParam = param.postpikParam;
+      pikParam.wmaxVec.resize(constraintsAll.size(), 1e-1);
+      pikParam.wmaxVec.back() = 1e-6; // 1e-1だと安定だが収束が悪い. それ以下だと1回で動きすぎてdistance field constraintのinvalid領域に入ってしまう. distance field constraintのtoleranceを大きくした上で、この値を小さくせよ.
+      pikParam.convergeThre = 1e-1 * std::sqrt(path->size());
+      //pikParam.satisfiedConvergeLevel = int(constraints.size())-2;
+      bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variablesAll,
+                                                                        constraintsAll,
+                                                                        tasks,
+                                                                        pikParam);
+      for(int i=0;i<path->size();i++){
+        global_inverse_kinematics_solver::link2Frame(std::vector<cnoid::LinkPtr>(variablesAll.begin() + i * variables.size(), variablesAll.begin() + (i+1) * variables.size()), (*path)[i]); // 更新
+      }
+    }
+
+
+    // shortcut.
+    for(int i=1;i+1<path->size();){
+      bool cut = true;
+      int idx = 0;
+      for(int l=0;l<variables.size();l++){
+        if(variables[l]->isRevoluteJoint() || variables[l]->isPrismaticJoint()) {
+          if (std::abs((*path)[i-1][idx] - (*path)[i+1][idx]) > param.postShortcutThre) {
+            cut = false;
+            break;
+          }
+          idx++;
+        } else if(variables[l]->isFreeJoint()) {
+          cnoid::Quaternion prevQ((*path)[i-1][idx+6], (*path)[i-1][idx+3], (*path)[i-1][idx+4], (*path)[i-1][idx+5]);
+          cnoid::Quaternion nextQ((*path)[i+1][idx+6], (*path)[i+1][idx+3], (*path)[i+1][idx+4], (*path)[i+1][idx+5]);
+          cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
+          cnoid::Matrix3 nextR = nextQ.toRotationMatrix();
+          cnoid::AngleAxis diffAngleAxis = cnoid::AngleAxis(nextR * prevR.transpose());
+          if ((std::abs((*path)[i-1][idx+0] - (*path)[i+1][idx+0]) > param.postShortcutThre) ||
+              (std::abs((*path)[i-1][idx+1] - (*path)[i+1][idx+1]) > param.postShortcutThre) ||
+              (std::abs((*path)[i-1][idx+2] - (*path)[i+1][idx+2]) > param.postShortcutThre) ||
+              (std::abs(diffAngleAxis.angle()) > param.postShortcutThre)) {
+            cut = false;
+            break;
+          }
+          idx+=7;
+        }
+      }
+      if (cut) {
+        path->erase(path->begin() + i);
+      } else {
+        i++;
+      }
+    }
+    if(param.debugLevel >=2){
+      std::cerr << "after optimization. path size: " << path->size() << std::endl;
+    }
+
+    return true;
+  }
+
 }
