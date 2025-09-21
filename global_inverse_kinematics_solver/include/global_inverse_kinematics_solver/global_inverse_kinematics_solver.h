@@ -150,8 +150,17 @@ namespace global_inverse_kinematics_solver{
                 std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
 
 
+  bool shortCut(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                std::shared_ptr<std::vector<std::vector<double> > >& path,
+                const GIKParam& param); // 0: states. 1: angles
+
   bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
                    const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   std::shared_ptr<std::vector<std::vector<double> > >& path,
+                   const GIKParam& param = GIKParam()); // 0: states. 1: angles
+  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: constraints
                    std::shared_ptr<std::vector<std::vector<double> > >& path,
                    const GIKParam& param = GIKParam()); // 0: states. 1: angles
 

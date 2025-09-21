@@ -579,21 +579,10 @@ namespace global_inverse_kinematics_solver{
     return solved == ompl::base::PlannerStatus::EXACT_SOLUTION;
   }
 
-
-
-  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                   std::shared_ptr<std::vector<std::vector<double> > >& path,
-                   const GIKParam& param) // 0: states. 1: angles
+  bool shortCut(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                std::shared_ptr<std::vector<std::vector<double> > >& path,
+                const GIKParam& param) // 0: states. 1: angles
   {
-    // 先頭要素と末尾要素は固定する.
-
-    if(param.debugLevel >=2){
-      std::cerr << "start post process. path size: " << path->size() << std::endl;
-    }
-    if(path->size() <= 2) return true;
-
-    // shortcut.
     for(int i=1;i+1<path->size();){
       bool cut = true;
       int idx = 0;
@@ -626,6 +615,26 @@ namespace global_inverse_kinematics_solver{
         i++;
       }
     }
+    return true;
+  }
+
+  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: constraints
+                   std::shared_ptr<std::vector<std::vector<double> > >& path,
+                   const GIKParam& param) // 0: states. 1: angles
+  {
+    // 先頭要素と末尾要素は固定する.
+
+    if(param.debugLevel >=2){
+      std::cerr << "start post process. path size: " << path->size() << std::endl;
+    }
+    if(path->size() <= 2) return true;
+
+    // shortcut.
+    global_inverse_kinematics_solver::shortCut(variables,
+                                               path,
+                                               param);
     if(param.debugLevel >=2){
       std::cerr << "after shortcut. path size: " << path->size() << std::endl;
     }
@@ -637,6 +646,7 @@ namespace global_inverse_kinematics_solver{
       std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
       std::vector<cnoid::LinkPtr> variablesAll;
       std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintsAll(constraints.size());
+      std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > nominalsAll;
       std::set<cnoid::BodyPtr> bodies = getBodies(variables);
       for (int i=0; i< path->size(); i++){
         std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
@@ -655,6 +665,9 @@ namespace global_inverse_kinematics_solver{
           for(int k=0;k<constraints[j].size();k++){
             constraintsAll[j].push_back(constraints[j][k]->clone(modelMap));
           }
+        }
+        for(int k=0;k<nominals.size();k++){
+          nominalsAll.push_back(nominals[k]->clone(modelMap));
         }
       }
 
@@ -736,6 +749,7 @@ namespace global_inverse_kinematics_solver{
             }
           }
         }
+        constraintsAll.back().insert(constraintsAll.back().begin(),nominalsAll.begin(),nominalsAll.end());
       }
       std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
       prioritized_inverse_kinematics_solver2::IKParam pikParam = param.postpikParam;
@@ -754,38 +768,9 @@ namespace global_inverse_kinematics_solver{
 
 
     // shortcut.
-    for(int i=1;i+1<path->size();){
-      bool cut = true;
-      int idx = 0;
-      for(int l=0;l<variables.size();l++){
-        if(variables[l]->isRevoluteJoint() || variables[l]->isPrismaticJoint()) {
-          if (std::abs((*path)[i-1][idx] - (*path)[i+1][idx]) > param.postShortcutThre) {
-            cut = false;
-            break;
-          }
-          idx++;
-        } else if(variables[l]->isFreeJoint()) {
-          cnoid::Quaternion prevQ((*path)[i-1][idx+6], (*path)[i-1][idx+3], (*path)[i-1][idx+4], (*path)[i-1][idx+5]);
-          cnoid::Quaternion nextQ((*path)[i+1][idx+6], (*path)[i+1][idx+3], (*path)[i+1][idx+4], (*path)[i+1][idx+5]);
-          cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
-          cnoid::Matrix3 nextR = nextQ.toRotationMatrix();
-          cnoid::AngleAxis diffAngleAxis = cnoid::AngleAxis(nextR * prevR.transpose());
-          if ((std::abs((*path)[i-1][idx+0] - (*path)[i+1][idx+0]) > param.postShortcutThre) ||
-              (std::abs((*path)[i-1][idx+1] - (*path)[i+1][idx+1]) > param.postShortcutThre) ||
-              (std::abs((*path)[i-1][idx+2] - (*path)[i+1][idx+2]) > param.postShortcutThre) ||
-              (std::abs(diffAngleAxis.angle()) > param.postShortcutThre)) {
-            cut = false;
-            break;
-          }
-          idx+=7;
-        }
-      }
-      if (cut) {
-        path->erase(path->begin() + i);
-      } else {
-        i++;
-      }
-    }
+    global_inverse_kinematics_solver::shortCut(variables,
+                                               path,
+                                               param);
     if(param.debugLevel >=2){
       std::cerr << "after optimization. path size: " << path->size() << std::endl;
     }
