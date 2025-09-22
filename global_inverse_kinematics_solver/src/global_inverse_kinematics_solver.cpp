@@ -588,7 +588,7 @@ namespace global_inverse_kinematics_solver{
       int idx = 0;
       for(int l=0;l<variables.size();l++){
         if(variables[l]->isRevoluteJoint() || variables[l]->isPrismaticJoint()) {
-          if (std::abs((*path)[i-1][idx] - (*path)[i+1][idx]) > param.preShortcutThre) {
+          if (std::abs((*path)[i-1][idx] - (*path)[i+1][idx]) > param.shortcutThre) {
             cut = false;
             break;
           }
@@ -599,10 +599,10 @@ namespace global_inverse_kinematics_solver{
           cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
           cnoid::Matrix3 nextR = nextQ.toRotationMatrix();
           cnoid::AngleAxis diffAngleAxis = cnoid::AngleAxis(nextR * prevR.transpose());
-          if ((std::abs((*path)[i-1][idx+0] - (*path)[i+1][idx+0]) > param.preShortcutThre) ||
-              (std::abs((*path)[i-1][idx+1] - (*path)[i+1][idx+1]) > param.preShortcutThre) ||
-              (std::abs((*path)[i-1][idx+2] - (*path)[i+1][idx+2]) > param.preShortcutThre) ||
-              (std::abs(diffAngleAxis.angle()) > param.preShortcutThre)) {
+          if ((std::abs((*path)[i-1][idx+0] - (*path)[i+1][idx+0]) > param.shortcutThre) ||
+              (std::abs((*path)[i-1][idx+1] - (*path)[i+1][idx+1]) > param.shortcutThre) ||
+              (std::abs((*path)[i-1][idx+2] - (*path)[i+1][idx+2]) > param.shortcutThre) ||
+              (std::abs(diffAngleAxis.angle()) > param.shortcutThre)) {
             cut = false;
             break;
           }
@@ -753,9 +753,9 @@ namespace global_inverse_kinematics_solver{
       }
       std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
       prioritized_inverse_kinematics_solver2::IKParam pikParam = param.postpikParam;
-      pikParam.wmaxVec.resize(constraintsAll.size(), 1e-1);
-      pikParam.wmaxVec.back() = 1e-6; // 1e-1だと安定だが収束が悪い. それ以下だと1回で動きすぎてdistance field constraintのinvalid領域に入ってしまう. distance field constraintのtoleranceを大きくした上で、この値を小さくせよ.
-      pikParam.convergeThre = 1e-1 * std::sqrt(path->size());
+      pikParam.wmaxVec.resize(constraintsAll.size(), param.postpikParam_wmaxVec1);
+      pikParam.wmaxVec.back() = param.postpikParam_wmaxVec2;
+      pikParam.convergeThre = param.postpikParam_convergeThre * std::sqrt(path->size());
       //pikParam.satisfiedConvergeLevel = int(constraints.size())-2;
       bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variablesAll,
                                                                         constraintsAll,

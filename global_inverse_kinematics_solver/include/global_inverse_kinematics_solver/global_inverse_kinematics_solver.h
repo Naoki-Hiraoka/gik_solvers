@@ -38,13 +38,12 @@ namespace global_inverse_kinematics_solver{
     double nearMaxError = 0.05; // sampleNear時のjointAngleConstraintのmaxError. // 大きいとタスクが達成できない場合に不安定になりやすいが、小さいとIKのloopが多く必要になって遅くなる. 各constraintのmaxErrorも同じ値にせよ
 
     // post processing
-    double preShortcutThre = 0.08; // 1つ手前のnodeと1つ後ろのnodeの全ての状態変数の値の差がそれぞれこの値以下である場合、そのnodeは削除される.
+    double shortcutThre = 0.08; // 1つ手前のnodeと1つ後ろのnodeの全ての状態変数の値の差がそれぞれこの値以下である場合、そのnodeは削除される.
     double displacementThre = 0.08; // 一回の最適化での変位上限
-    double postShortcutThre = 0.08; // 1つ手前のnodeと1つ後ろのnodeの全ての状態変数の値の差がそれぞれこの値以下である場合、そのnodeは削除される.
     prioritized_inverse_kinematics_solver2::IKParam postpikParam;
     double postpikParam_wmaxVec1 = 1e-1; // その他要素
-    double postpikParam_wmaxVec2 = 1e-6; // 末尾要素
-    double postpikParam_convergeThre = 1e-1; // この値掛けるsqrt(path.size())
+    double postpikParam_wmaxVec2 = 1e-6; // 末尾要素. // 1e-1だと安定だが収束が悪い. それ以下だと1回で動きすぎてdistance field constraintのinvalid領域に入ってしまう. distance field constraintのtoleranceを大きくした上で、この値を小さくせよ.
+    double postpikParam_convergeThre = 1e-1; // この値掛けるsqrt(path.size()). // 1e-1はヒューマノイド用なので自由度が少ない場合は1e-2などにせよ
 
     GIKParam(){
       pikParam.we = 1e2; // 逆運動学が振動しないこと優先. 1e0だと不安定. 1e3だと大きすぎる
