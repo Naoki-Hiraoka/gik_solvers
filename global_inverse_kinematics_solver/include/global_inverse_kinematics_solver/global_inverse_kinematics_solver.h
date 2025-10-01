@@ -34,7 +34,7 @@ namespace global_inverse_kinematics_solver{
 
     unsigned int threads = 1; // 1以上
 
-    prioritized_inverse_kinematics_solver2::IKParam pikParam;
+    prioritized_inverse_kinematics_solver2::IKParam pikParam; // satisfiedConvergeLevelは読まれない.
     double nearMaxError = 0.05; // sampleNear時のjointAngleConstraintのmaxError. // 大きいとタスクが達成できない場合に不安定になりやすいが、小さいとIKのloopが多く必要になって遅くなる. 各constraintのmaxErrorも同じ値にせよ
 
     // post processing

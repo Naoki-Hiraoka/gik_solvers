@@ -194,6 +194,7 @@ namespace global_inverse_kinematics_solver{
     gikConstraint->viewer() = param.viewer;
     gikConstraint->drawLoop() = param.drawLoop;
     gikConstraint->param() = param.pikParam;
+    gikConstraint->param().satisfiedConvergeLevel = int(constraints[0].size()) - 1;
     gikConstraint->nearMaxError() = param.nearMaxError;
     GIKStateSpacePtr stateSpace = std::make_shared<GIKStateSpace>(ambientSpace, gikConstraint);
     stateSpace->setDelta(param.delta); // この距離内のstateは、中間のconstraintチェック無しで遷移可能
@@ -218,7 +219,7 @@ namespace global_inverse_kinematics_solver{
       GIKGoalSpacePtr goal = std::make_shared<GIKGoalSpace>(spaceInformation, ambientSpace, modelQueue, constraints, variables, goal_, nominals, rejections);
       goal->setViewer(param.viewer);
       goal->setDrawLoop(param.drawLoop);
-      goal->setParam(param.pikParam);
+      goal->setParam(gikConstraint->param());
       goal->setNearMaxError(param.nearMaxError);
       goalSpaces.push_back(goal);
     }
@@ -470,6 +471,7 @@ namespace global_inverse_kinematics_solver{
     gikConstraint->viewer() = param.viewer;
     gikConstraint->drawLoop() = param.drawLoop;
     gikConstraint->param() = param.pikParam;
+    gikConstraint->param().satisfiedConvergeLevel = int(constraints[0].size()) - 1;
     gikConstraint->nearMaxError() = param.nearMaxError;
     GIKStateSpacePtr stateSpace = std::make_shared<GIKStateSpace>(ambientSpace, gikConstraint);
     stateSpace->setDelta(param.delta); // この距離内のstateは、中間のconstraintチェック無しで遷移可能
@@ -620,6 +622,17 @@ namespace global_inverse_kinematics_solver{
 
   bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
                    const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
+                   std::shared_ptr<std::vector<std::vector<double> > >& path,
+                   const GIKParam& param){ // 0: states. 1: angles
+    return postProcess(variables,
+                       constraints,
+                       std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(),
+                       path,
+                       param);
+  }
+
+  bool postProcess(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
+                   const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
                    const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: constraints
                    std::shared_ptr<std::vector<std::vector<double> > >& path,
                    const GIKParam& param) // 0: states. 1: angles
@@ -756,7 +769,7 @@ namespace global_inverse_kinematics_solver{
       pikParam.wmaxVec.resize(constraintsAll.size(), param.postpikParam_wmaxVec1);
       pikParam.wmaxVec.back() = param.postpikParam_wmaxVec2;
       pikParam.convergeThre = param.postpikParam_convergeThre * std::sqrt(path->size());
-      //pikParam.satisfiedConvergeLevel = int(constraints.size())-2;
+      pikParam.satisfiedConvergeLevel = int(constraints.size())-2;
       bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variablesAll,
                                                                         constraintsAll,
                                                                         tasks,
