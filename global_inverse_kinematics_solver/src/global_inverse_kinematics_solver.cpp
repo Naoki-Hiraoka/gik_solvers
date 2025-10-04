@@ -657,7 +657,7 @@ namespace global_inverse_kinematics_solver{
     // optimize
     {
       std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
-      std::vector<cnoid::LinkPtr> variablesAll;
+      std::vector<cnoid::LinkPtr> variablesAll; // path[0]からpath[-1]まで含まれる.
       std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintsAll(constraints.size());
       std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > nominalsAll;
       std::set<cnoid::BodyPtr> bodies = getBodies(variables);
@@ -685,57 +685,45 @@ namespace global_inverse_kinematics_solver{
       }
 
       {
-        // start configuration
-        for(int v=0;v<variables.size();v++) {
-          if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
-            std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
-            constraint->A_joint() = variablesAll[v];
-            constraint->B_q() = variablesAll[v]->q();
-            constraint->precision() = 1e-3;
-            constraint->maxError() = 1e10;
-            constraintsAll.back().push_back(constraint);
-          }else if(variables[v]->isFreeJoint()) {
-            std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
-            constraint->A_link() = variablesAll[v];
-            constraint->B_localpos() = variablesAll[v]->T();
-            constraint->precision() = 1e-3;
-            constraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
-            constraintsAll.back().push_back(constraint);
-          }else{
-            std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
-          }
-        }
         // goal configuration
         // for(int k=0;k<goals.size();k++){
         //   constraintsAll.back().push_back(goals[k]->clone(modelMaps.back()));
         // }
-        for(int v=0;v<variables.size();v++) {
-          if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
-            std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
-            constraint->A_joint() = variablesAll[v + variables.size() * (path->size()-1)];
-            constraint->B_q() = variablesAll[v + variables.size() * (path->size()-1)]->q();
-            constraint->precision() = 1e-3;
-            constraint->maxError() = 1e10;
-            constraintsAll.back().push_back(constraint);
-          }else if(variables[v]->isFreeJoint()) {
-            std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
-            constraint->A_link() = variablesAll[v + variables.size() * (path->size()-1)];
-            constraint->B_localpos() = variablesAll[v + variables.size() * (path->size()-1)]->T();
-            constraint->precision() = 1e-3;
-            constraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
-            constraintsAll.back().push_back(constraint);
-          }else{
-            std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
-          }
-        }
         // displacement limit
-        for (int i=0; i<path->size(); i++) {
+        for (int i=1; i+1<path->size(); i++) { // start stateとgoal stateは固定なので含めない.
           for(int v=0;v<variables.size();v++) {
             if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint() || variables[v]->isFreeJoint()){
               std::shared_ptr<ik_constraint2::JointDisplacementConstraint> constraint = std::make_shared<ik_constraint2::JointDisplacementConstraint>();
               constraint->joint() = variablesAll[v + i*variables.size()];
               constraint->limit() = param.displacementThre;
               constraintsAll.back().push_back(constraint);
+            }
+          }
+        }
+        // adjacent configuration
+        for (int i=0; i+1<path->size(); i++) {
+          for(int v=0;v<variables.size();v++) {
+            if(variables[v]->isRevoluteJoint() || variables[v]->isPrismaticJoint()){
+              std::shared_ptr<ik_constraint2::JointRegionConstraint> constraint = std::make_shared<ik_constraint2::JointRegionConstraint>();
+              constraint->A_joint() = variablesAll[v + i*variables.size()];
+              constraint->B_joint() = variablesAll[v + (i+1)*variables.size()];
+              constraint->region() = param.shortcutThre;
+              constraintsAll.back().push_back(constraint);
+            }else if(variables[v]->isFreeJoint()) {
+              std::shared_ptr<ik_constraint2::RegionConstraint> constraint = std::make_shared<ik_constraint2::RegionConstraint>();
+              constraint->A_link() = variablesAll[v + i*variables.size()];
+              constraint->B_link() = variablesAll[v + (i+1)*variables.size()];
+              constraint->C().resize(3,3);
+              constraint->dl().resize(3);
+              constraint->du().resize(3);
+              for(int i=0;i<3;i++){
+                constraint->C().insert(i,i) = 1.0;
+                constraint->dl()[i] = - param.shortcutThre;
+                constraint->du()[i] = - param.shortcutThre;
+              }
+              constraintsAll.back().push_back(constraint);
+            }else{
+              std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
             }
           }
         }
@@ -764,13 +752,16 @@ namespace global_inverse_kinematics_solver{
         }
         constraintsAll.back().insert(constraintsAll.back().begin(),nominalsAll.begin(),nominalsAll.end());
       }
+
+      std::vector<cnoid::LinkPtr> variablesTarget(std::next(variablesAll.begin(),variables.size()),std::prev(variablesAll.end(),variables.size())); // path[1]からpath[-2]まで含まれる. =startStateとgoalStateは固定.
+
       std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
       prioritized_inverse_kinematics_solver2::IKParam pikParam = param.postpikParam;
       pikParam.wmaxVec.resize(constraintsAll.size(), param.postpikParam_wmaxVec1);
       pikParam.wmaxVec.back() = param.postpikParam_wmaxVec2;
       pikParam.convergeThre = param.postpikParam_convergeThre * std::sqrt(path->size());
       pikParam.satisfiedConvergeLevel = int(constraints.size())-2;
-      bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variablesAll,
+      bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variablesTarget,
                                                                         constraintsAll,
                                                                         tasks,
                                                                         pikParam);
