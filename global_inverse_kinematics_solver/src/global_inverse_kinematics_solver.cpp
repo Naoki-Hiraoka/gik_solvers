@@ -655,7 +655,10 @@ namespace global_inverse_kinematics_solver{
 
 
     // optimize
-    {
+    int prevSize = path->size() + 1;
+    while(path->size() != prevSize){
+      prevSize = path->size();
+
       std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
       std::vector<cnoid::LinkPtr> variablesAll; // path[0]からpath[-1]まで含まれる.
       std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintsAll(constraints.size());
@@ -674,13 +677,15 @@ namespace global_inverse_kinematics_solver{
         }
         global_inverse_kinematics_solver::frame2Link((*path)[i],variablesNext);
         variablesAll.insert(variablesAll.end(), variablesNext.begin(), variablesNext.end());
-        for(int j=0;j<constraints.size();j++){
-          for(int k=0;k<constraints[j].size();k++){
-            constraintsAll[j].push_back(constraints[j][k]->clone(modelMap));
+        if(i>0 && i+1<path->size()){  // start stateとgoal stateは固定なので含めない.
+          for(int j=0;j<constraints.size();j++){
+            for(int k=0;k<constraints[j].size();k++){
+              constraintsAll[j].push_back(constraints[j][k]->clone(modelMap));
+            }
           }
-        }
-        for(int k=0;k<nominals.size();k++){
-          nominalsAll.push_back(nominals[k]->clone(modelMap));
+          for(int k=0;k<nominals.size();k++){
+            nominalsAll.push_back(nominals[k]->clone(modelMap));
+          }
         }
       }
 
@@ -719,7 +724,7 @@ namespace global_inverse_kinematics_solver{
               for(int i=0;i<3;i++){
                 constraint->C().insert(i,i) = 1.0;
                 constraint->dl()[i] = - param.shortcutThre;
-                constraint->du()[i] = - param.shortcutThre;
+                constraint->du()[i] = param.shortcutThre;
               }
               constraintsAll.back().push_back(constraint);
             }else{
@@ -768,16 +773,15 @@ namespace global_inverse_kinematics_solver{
       for(int i=0;i<path->size();i++){
         global_inverse_kinematics_solver::link2Frame(std::vector<cnoid::LinkPtr>(variablesAll.begin() + i * variables.size(), variablesAll.begin() + (i+1) * variables.size()), (*path)[i]); // 更新
       }
-    }
 
-
-    // shortcut.
-    global_inverse_kinematics_solver::shortCut(variables,
-                                               path,
-                                               param);
-    if(param.debugLevel >=2){
-      std::cerr << "after optimization. path size: " << path->size() << std::endl;
-    }
+      // shortcut.
+      global_inverse_kinematics_solver::shortCut(variables,
+                                                 path,
+                                                 param);
+      if(param.debugLevel >=2){
+        std::cerr << "after optimization. path size: " << path->size() << std::endl;
+      }
+    } //ここでmodelMapsがデストラクトされる
 
     return true;
   }
