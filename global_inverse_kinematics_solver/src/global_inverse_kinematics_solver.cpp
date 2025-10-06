@@ -765,12 +765,9 @@ namespace global_inverse_kinematics_solver{
     while(path->size() > 2 && path->size() != prevSize){
       prevSize = path->size();
 
-      std::cerr << "aaa" << std::endl;
-
       for (int i=0; i<path->size(); i++) {
         global_inverse_kinematics_solver::frame2Link((*path)[i],variabless[i]);
       }
-      std::cerr << "bbb" << std::endl;
 
       std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > goals;
       if(true){
@@ -779,11 +776,13 @@ namespace global_inverse_kinematics_solver{
             std::shared_ptr<ik_constraint2::JointAngleConstraint> constraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
             constraint->A_joint() = variabless[int(path->size())-1][v];
             constraint->B_q() = variabless[int(path->size())-1][v]->q();
+            constraint->weight() = 3; // goalの重みを大きく
             goals.push_back(constraint);
           }else if(variables[v]->isFreeJoint()) {
             std::shared_ptr<ik_constraint2::PositionConstraint> constraint = std::make_shared<ik_constraint2::PositionConstraint>();
             constraint->A_link() = variabless[int(path->size())-1][v];
             constraint->B_localpos() = variabless[int(path->size())-1][v]->T();
+            constraint->weight() << 3, 3, 3, 3, 3, 3; // goalの重みを大きく
             goals.push_back(constraint);
           }else{
             std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
@@ -795,7 +794,6 @@ namespace global_inverse_kinematics_solver{
       //   constraintsAll.back().push_back(goals[k]->clone(modelMaps.back()));
       // }
 
-      std::cerr << "ccc" << std::endl;
       std::vector<cnoid::LinkPtr> variablesAll; // path[1]からpath[-1]まで含まれる.
       std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintsAll(constraints.size()+1);
 
@@ -807,7 +805,6 @@ namespace global_inverse_kinematics_solver{
       }
       constraintsAll[int(constraints.size())-1].insert(constraintsAll[int(constraints.size())-1].end(), goals.begin(), goals.end()); // 末尾の一つ手前の優先度. adjacentより上. constraintsの末尾と同じ.
 
-      std::cerr << "ddd" << std::endl;
       std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
       prioritized_inverse_kinematics_solver2::IKParam pikParam = param.postpikParam;
       pikParam.wmaxVec.clear();
@@ -819,7 +816,6 @@ namespace global_inverse_kinematics_solver{
                                                                         constraintsAll,
                                                                         tasks,
                                                                         pikParam);
-      std::cerr << "eee" << std::endl;
       for(int i=1;i<path->size();i++){
         global_inverse_kinematics_solver::link2Frame(variabless[i], (*path)[i]); // 更新
       }
@@ -831,7 +827,6 @@ namespace global_inverse_kinematics_solver{
       if(param.debugLevel >=2){
         std::cerr << "after optimization. path size: " << path->size() << std::endl;
       }
-      std::cerr << "fff" << std::endl;
     }
 
     return true;
