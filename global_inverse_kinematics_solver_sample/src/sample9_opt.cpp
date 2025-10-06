@@ -236,7 +236,8 @@ namespace global_inverse_kinematics_solver_sample{
       // optimization
       param.debugLevel = 2;
       param.postpikParam.debugLevel = 1;
-      param.shortcutThre = 0.3; // 0.08:安全(細いものを貫通しない). 0.3:高速.
+      param.postpikParam.maxIteration = 5;
+      param.shortcutThre = 0.2; // 0.08:安全(細いものを貫通しない). 0.3:高速.
       global_inverse_kinematics_solver::postProcess(variables,
                                                     constraints,
                                                     path,
