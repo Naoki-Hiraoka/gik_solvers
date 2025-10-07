@@ -102,8 +102,7 @@ namespace global_inverse_kinematics_solver_sample{
     }
 
 
-
-    while(true){
+    for(int trial=0;true;trial++){
 
       // reset manip pose
       robot->rootLink()->p() = cnoid::Vector3(0,0,1.0);
@@ -225,23 +224,45 @@ namespace global_inverse_kinematics_solver_sample{
       param.pikParam.pathOutputLoop = 5;
       param.pikParam.satisfiedConvergeLevel = int(constraints.size())-1;
       std::shared_ptr<std::vector<std::vector<double> > > path = std::make_shared<std::vector<std::vector<double> > >();
-      bool solved = global_inverse_kinematics_solver::solveGIK(variables,
-                                                               constraints,
-                                                               goals,
-                                                               nominals,
-                                                               param,
-                                                               path);
-      std::cerr << "solved: " << solved << std::endl;
+
+      if(trial % 2 == 0){
+        bool solved = global_inverse_kinematics_solver::solveGIK(variables,
+                                                                 constraints,
+                                                                 goals,
+                                                                 nominals,
+                                                                 param,
+                                                                 path);
+        std::cerr << "solved with nominal: " << solved << std::endl;
+      }else{
+        bool solved = global_inverse_kinematics_solver::solveGIK(variables,
+                                                                 constraints,
+                                                                 goals,
+                                                                 std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(),
+                                                                 param,
+                                                                 path);
+        std::cerr << "solved without nominal: " << solved << std::endl;
+      }
 
       // optimization
       param.debugLevel = 2;
       param.postpikParam.debugLevel = 1;
       param.postpikParam.maxIteration = 5;
       param.shortcutThre = 0.2; // 0.08:安全(細いものを貫通しない). 0.3:高速.
-      global_inverse_kinematics_solver::postProcess(variables,
-                                                    constraints,
-                                                    path,
-                                                    param);
+      if(trial % 2 == 0){
+        global_inverse_kinematics_solver::postProcess(variables,
+                                                      constraints,
+                                                      std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(),
+                                                      nominals,
+                                                      path,
+                                                      param);
+      }else{
+        global_inverse_kinematics_solver::postProcess(variables,
+                                                      constraints,
+                                                      goals,
+                                                      nominals,
+                                                      path,
+                                                      param);
+      }
 
       // main loop
       for(int i=0;i<path->size();i++){
