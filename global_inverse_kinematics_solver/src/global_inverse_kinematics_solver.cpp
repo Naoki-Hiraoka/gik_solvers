@@ -712,19 +712,17 @@ namespace global_inverse_kinematics_solver{
           constraint->region() = param.shortcutThre;
           interConstraintss[i].back().push_back(constraint);
         }else if(variables[v]->isFreeJoint()) {
-          std::shared_ptr<ik_constraint2::RegionConstraint> constraint = std::make_shared<ik_constraint2::RegionConstraint>();
+          std::shared_ptr<ik_constraint2::RegionConstraint2> constraint = std::make_shared<ik_constraint2::RegionConstraint2>();
           constraint->A_link() = variabless[i][v];
           constraint->B_link() = variabless[i+1][v];
-          constraint->C().resize(3,3);
-          constraint->dl().resize(3);
-          constraint->du().resize(3);
-          for(int i=0;i<3;i++){
+          constraint->C().resize(6,6);
+          constraint->dl().resize(6);
+          constraint->du().resize(6);
+          for(int i=0;i<6;i++){
             constraint->C().insert(i,i) = 1.0;
             constraint->dl()[i] = - param.shortcutThre;
             constraint->du()[i] = param.shortcutThre;
           }
-          constraint->weightR() << 0.0, 0.0, 0.0; // 並進のみ見ていることに注意.
-          constraint->eval_link() = nullptr;
           interConstraintss[i].back().push_back(constraint);
         }else{
           std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
