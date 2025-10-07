@@ -325,19 +325,18 @@ namespace global_inverse_kinematics_solver{
           solutionPath->print(std::cout);
         }
 
-        ompl::geometric::PathSimplifierPtr pathSimplifier = std::make_shared<ompl::geometric::PathSimplifier>(spaceInformation);
-        ompl::time::point start = ompl::time::now();
-        std::size_t numStates = solutionPath->getStateCount();
-        gikConstraint->viewer() = nullptr; // simplifySolution()中は描画しない
-        //pathSimplifier->simplify(*solutionPath, param.timeout);
-        gikConstraint->viewer() = param.viewer; // simplifySolution()中は描画しない
-        double simplifyTime = ompl::time::seconds(ompl::time::now() - start);
-        OMPL_INFORM("Path simplification took %f seconds and changed from %d to %d states",
-                    simplifyTime, numStates, solutionPath->getStateCount());
-
-        if(param.debugLevel > 1){
-          solutionPath->print(std::cout);
-        }
+        // ompl::geometric::PathSimplifierPtr pathSimplifier = std::make_shared<ompl::geometric::PathSimplifier>(spaceInformation);
+        // ompl::time::point start = ompl::time::now();
+        // std::size_t numStates = solutionPath->getStateCount();
+        // gikConstraint->viewer() = nullptr; // simplifySolution()中は描画しない
+        // pathSimplifier->simplify(*solutionPath, param.timeout);
+        // gikConstraint->viewer() = param.viewer; // simplifySolution()中は描画しない
+        // double simplifyTime = ompl::time::seconds(ompl::time::now() - start);
+        // OMPL_INFORM("Path simplification took %f seconds and changed from %d to %d states",
+        //             simplifyTime, numStates, solutionPath->getStateCount());
+        // if(param.debugLevel > 1){
+        //   solutionPath->print(std::cout);
+        // }
 
         solutionPath->interpolate();
         if(param.debugLevel > 1){
@@ -548,10 +547,9 @@ namespace global_inverse_kinematics_solver{
         //   OMPL_INFORM("Path simplification took %f seconds and changed from %d to %d states",
         //               simplifyTime, numStates, solutionPath->getStateCount());
         // }
-
-        if(param.debugLevel > 1){
-          solutionPath->print(std::cout);
-        }
+        // if(param.debugLevel > 1){
+        //   solutionPath->print(std::cout);
+        // }
 
         solutionPath->interpolate();
         if(param.debugLevel > 1){
@@ -725,6 +723,8 @@ namespace global_inverse_kinematics_solver{
             constraint->dl()[i] = - param.shortcutThre;
             constraint->du()[i] = param.shortcutThre;
           }
+          constraint->weightR() << 0.0, 0.0, 0.0; // 並進のみ見ていることに注意.
+          constraint->eval_link() = nullptr;
           interConstraintss[i].back().push_back(constraint);
         }else{
           std::cerr << __FUNCTION__ << " something is wrong" << std::endl;
@@ -802,8 +802,8 @@ namespace global_inverse_kinematics_solver{
               constraintsAll[j].insert(constraintsAll[j].end(), interConstraintss[i][j].begin(), interConstraintss[i][j].end());
             }
           }else{
-            //constraintsAll[int(constraintsAll.size())-2].insert(constraintsAll[int(constraintsAll.size())-2].end(), goalss[i].begin(), goalss[i].end());
-            constraintsAll[0].insert(constraintsAll[0].end(), goalss[i].begin(), goalss[i].end()); // 最高優先度. 末尾より上であればいずれの優先度でも良いはずだが, より精度良く達成するため.
+            constraintsAll[int(constraintsAll.size())-2].insert(constraintsAll[int(constraintsAll.size())-2].end(), goalss[i].begin(), goalss[i].end());
+            //constraintsAll[0].insert(constraintsAll[0].end(), goalss[i].begin(), goalss[i].end()); // 最高優先度. 末尾より上であればいずれの優先度でも良いはずだが, より精度良く達成するため.
           }
         }
       }
