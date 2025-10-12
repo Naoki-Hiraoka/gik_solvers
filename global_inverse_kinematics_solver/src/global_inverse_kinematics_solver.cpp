@@ -299,7 +299,8 @@ namespace global_inverse_kinematics_solver{
 
     {
       ompl::time::point start = ompl::time::now();
-      solved = planner->solve(param.timeout);
+      solved = planner->solve(ompl::base::plannerOrTerminationCondition(ompl::base::timedPlannerTerminationCondition(param.timeout),
+                                                                        param.ptc));
       double planTime = ompl::time::seconds(ompl::time::now() - start);
       if (solved == ompl::base::PlannerStatus::EXACT_SOLUTION)
         OMPL_INFORM("Solution found in %f seconds", planTime);
@@ -515,7 +516,8 @@ namespace global_inverse_kinematics_solver{
 
     {
       ompl::time::point start = ompl::time::now();
-      solved = planner->solve(param.timeout);
+      solved = planner->solve(ompl::base::plannerOrTerminationCondition(ompl::base::timedPlannerTerminationCondition(param.timeout),
+                                                                        param.ptc));
       double planTime = ompl::time::seconds(ompl::time::now() - start);
       if (solved == ompl::base::PlannerStatus::EXACT_SOLUTION)
         OMPL_INFORM("Solution found in %f seconds", planTime);

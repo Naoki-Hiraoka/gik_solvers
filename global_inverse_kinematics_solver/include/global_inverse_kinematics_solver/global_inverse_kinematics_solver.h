@@ -14,6 +14,7 @@ namespace global_inverse_kinematics_solver{
     int debugLevel = 0; // 0: no debug message. 1: time measure. 2: internal state
 
     double timeout = 10.0;
+    std::function<bool()> ptc = [](){return false;}; // timeoutが経過するか、ptc()=trueになると解が見つからなくても終了する.
     double delta = 0.2; // planning自体の速さには影響はなく、その後のsimplify, interpolateの速さに影響する. 大きければ大きいほど速いが、干渉計算の正確さが犠牲になる. デフォルトは0.05だが、関節変位のノルムを使う都合上、関節数が多いヒューマノイドではもっと大きい方がいい
     double range = 0.3; // planning自体の速さに影響する.
     double goalBias = 0.05; // デフォルトは0.05だが、もっと大きい方がはやく解ける. goalSampingはIKの変位が大きいので、この値が大きいとsample1回あたりの時間が長くなるデメリットもある. [今は使われていない]
