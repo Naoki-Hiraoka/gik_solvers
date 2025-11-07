@@ -20,10 +20,6 @@ namespace global_inverse_kinematics_solver{
     double goalBias = 0.05; // デフォルトは0.05だが、もっと大きい方がはやく解ける. goalSampingはIKの変位が大きいので、この値が大きいとsample1回あたりの時間が長くなるデメリットもある. [今は使われていない]
     int planner = 0; // 0: KPIECE. 1: EST. 2: RRT
 
-    bool useProjection = false; // GIKConstraint2を使うかどうか
-    double projectionRange = 0.2;
-    double projectionTrapThre = 0.03;
-
     std::vector<cnoid::LinkPtr> projectLink;
     cnoid::Isometry3 projectLocalPose = cnoid::Isometry3::Identity();
     double projectCellSize = 0.15; // 要パラチューン.  // 0.05よりも0.1の方が速い. 0.3よりも0.2の方が速い?
@@ -70,80 +66,22 @@ namespace global_inverse_kinematics_solver{
                 const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
                 const GIKParam& param = GIKParam(),
                 std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& goals, // 0: goals(AND).
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections, // 0: rejections
-                const GIKParam& param = GIKParam(),
-                std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, // 0: goalSpace(OR). 1: goals(AND).
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
-                const GIKParam& param,
-                std::shared_ptr<std::vector<std::vector<double> > > path); // 0: states. 1: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, // 0: goalSpace(OR). 1: goals(AND).
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections, // 0: rejections
-                const GIKParam& param,
-                std::shared_ptr<std::vector<std::vector<double> > > path); // 0: states. 1: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, // 0: goalSpace(OR). 1: goals(AND).
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
-                const GIKParam& param,
-                const std::vector<std::shared_ptr<std::vector<std::vector<double> > > >& path,
-                bool findAllSolution=false); // 0: goalSpace(OR). 1: states. 2: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, // 0: goalSpace(OR). 1: goals(AND).
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& nominals, // 0: nominals
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections, // 0: rejections
-                const GIKParam& param,
-                const std::vector<std::shared_ptr<std::vector<std::vector<double> > > >& path,
-                bool findAllSolution=false); // 0: goalSpace(OR). 1: states. 2: angles
 
   bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
                 const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, // 0: modelQueue, 1: constriant priority 2: constraints
-                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, // 0: modelQueue. 1: goalSpace(OR). 2: goals(AND).
+                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, // 0: modelQueue. 1: goals(AND).
                 const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, // 0: modelQueue, 1: nominals
                 std::shared_ptr<UintQueue> modelQueue,
                 const GIKParam& param,
-                const std::vector<std::shared_ptr<std::vector<std::vector<double> > > >& path,
-                bool findAllSolution=false); // 0: goalSpace(OR). 1: states. 2: angles
-  bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
-                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, // 0: modelQueue, 1: constriant priority 2: constraints
-                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, // 0: modelQueue. 1: goalSpace(OR). 2: goals(AND).
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, // 0: modelQueue, 1: nominals
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections, // 0: modelQueue, 1: rejections
-                std::shared_ptr<UintQueue> modelQueue,
-                const GIKParam& param,
-                const std::vector<std::shared_ptr<std::vector<std::vector<double> > > >& path,
-                bool findAllSolution=false); // 0: goalSpace(OR). 1: states. 2: angles
+                const std::shared_ptr<std::vector<std::vector<double> > >& path); // 0: goalSpace(OR). 1: states. 2: angles
 
   bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
                 const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
                 const std::vector<double>& goal, // 0: angles.
                 const GIKParam& param,
                 std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
-  bool solveGIK(const std::vector<cnoid::LinkPtr>& variables, // 0: variables
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints, // 0: constriant priority 1: constraints
-                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections, // 0: rejections
-                const std::vector<double>& goal, // 0: angles.
-                const GIKParam& param,
-                std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
   bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
                 const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, // 0: modelQueue, 1: constriant priority 2: constraints
-                const std::vector<double>& goal, // 0: angles.
-                std::shared_ptr<UintQueue> modelQueue,
-                const GIKParam& param,
-                std::shared_ptr<std::vector<std::vector<double> > > path = nullptr); // 0: states. 1: angles
-  bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
-                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, // 0: modelQueue, 1: constriant priority 2: constraints
-                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections, // 0: modelQueue, 1: rejections
                 const std::vector<double>& goal, // 0: angles.
                 std::shared_ptr<UintQueue> modelQueue,
                 const GIKParam& param,

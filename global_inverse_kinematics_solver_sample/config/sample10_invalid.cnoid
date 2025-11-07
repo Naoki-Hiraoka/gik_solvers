@@ -8,4 +8,4 @@ items:
       id: 1
       name: "GlobalInverseKinematicsSolverSamplePlugin"
       plugin: GlobalInverseKinematicsSolverSample
-      class: sample4_jaxonrejItem
+      class: sample10_invalidItem

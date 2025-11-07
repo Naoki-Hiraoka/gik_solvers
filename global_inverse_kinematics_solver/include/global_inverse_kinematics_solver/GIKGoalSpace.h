@@ -10,23 +10,18 @@ namespace global_inverse_kinematics_solver{
 
   class GIKGoalSpace : public ompl_near_projection::NearGoalSpace{
   public:
-    GIKGoalSpace(const ompl::base::SpaceInformationPtr &si, const ompl::base::StateSpacePtr ambientSpace, std::shared_ptr<UintQueue>& modelQueue, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, const std::vector<std::vector<cnoid::LinkPtr> >& variables, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections) :
+    GIKGoalSpace(const ompl::base::SpaceInformationPtr &si, const ompl::base::StateSpacePtr ambientSpace, std::shared_ptr<UintQueue>& modelQueue, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, const std::vector<std::vector<cnoid::LinkPtr> >& variables, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals) :
       NearGoalSpace(si),
       modelQueue_(modelQueue),
       variables_(variables),
-      goals_(goals)
+      goals_(goals),
+      nominals_(nominals)
     {
       for(int i=0;i<variables_.size();i++){
         bodies_.push_back(getBodies(variables_[i]));
       }
 
-      std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > > goalConstraints = constraints;
-      for(int i=0;i<goalConstraints.size();i++){
-        goalConstraints[i].push_back(goals[i]);
-      }
-      GIKConstraintPtr goalGIKConstraint = std::make_shared<GIKConstraint>(ambientSpace, modelQueue, goalConstraints, variables, rejections);
-      goalGIKConstraint->nominalConstraints() = nominals;
-      goalStateSpace_ = std::make_shared<GIKStateSpace>(ambientSpace, goalGIKConstraint);
+      stateSpace_ = std::static_pointer_cast<GIKStateSpace>(si->getStateSpace());
     }
 
     virtual bool isSatisfied(const ompl::base::State *st, double *distance) const override;
@@ -34,16 +29,12 @@ namespace global_inverse_kinematics_solver{
 
     bool sampleTo(ompl::base::State *state, const ompl::base::State *source, double* distance = nullptr) const override;
 
-    void setViewer(const std::shared_ptr<choreonoid_viewer::Viewer>& viewer) { goalStateSpace_->getGIKConstraint()->viewer() = viewer;}
-    void setDrawLoop(const unsigned int& drawLoop) { goalStateSpace_->getGIKConstraint()->drawLoop() = drawLoop; }
-    void setNearMaxError(const double& nearMaxError) { goalStateSpace_->getGIKConstraint()->nearMaxError() = nearMaxError; }
-    void setParam(const prioritized_inverse_kinematics_solver2::IKParam& param) { goalStateSpace_->getGIKConstraint()->param() = param; }
-
  protected:
-    GIKStateSpacePtr goalStateSpace_;
+    GIKStateSpacePtr stateSpace_; // goalSpaceではなく、constrainedSpace
     mutable std::shared_ptr<UintQueue> modelQueue_;
     const std::vector<std::vector<cnoid::LinkPtr> > variables_;
     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > goals_;
+    const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > nominals_;
     std::vector<std::set<cnoid::BodyPtr> > bodies_;
 
   };

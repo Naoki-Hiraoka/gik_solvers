@@ -9,9 +9,11 @@
 #include <ik_constraint2/ik_constraint2.h>
 #include <ik_constraint2_vclip/ik_constraint2_vclip.h>
 #include <ik_constraint2_distance_field/ik_constraint2_distance_field.h>
+#include <ik_constraint2_bullet/ik_constraint2_bullet.h>
+#include <choreonoid_bullet/choreonoid_bullet.h>
 
 namespace global_inverse_kinematics_solver_sample{
-  void sample5_jaxon(){
+  void sample10_invalid(){
     cnoid::BodyLoader bodyLoader;
 
     // load robot
@@ -27,16 +29,25 @@ namespace global_inverse_kinematics_solver_sample{
     desk->calcForwardKinematics();
     desk->calcCenterOfMass();
 
+    // load floor
+    std::string floorModelfile = ros::package::getPath("global_inverse_kinematics_solver_sample") + "/models/desk.wrl";
+    cnoid::BodyPtr floor = bodyLoader.load(floorModelfile);
+
+    floor->rootLink()->p() = cnoid::Vector3(0.0,0.0,0.0); // わざと足と干渉させる
+    floor->calcForwardKinematics();
+    floor->calcCenterOfMass();
+
     // setup viewer
     std::shared_ptr<choreonoid_viewer::Viewer> viewer = std::make_shared<choreonoid_viewer::Viewer>();
-    viewer->objects(std::vector<cnoid::BodyPtr>{robot, desk});
-
+    viewer->objects(std::vector<cnoid::BodyPtr>{robot, desk, floor});
+    viewer->drawObjects(true);
 
     // setup constraints
-    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > constraints0; // 自己干渉のvclip計算などに時間がかかるので、使いまわしたほうがいい
+    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > constraints0;
+    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > constraints2; // 自己干渉のvclip計算などに時間がかかるので、使いまわしたほうがいい. collisionはsoft constraintにした方が安定する
 
     // task: joint limit
-    for(int i=0;i<robot->numJoints();i++){
+    for(int i=0;i<robot->numJoints()-12;i++){ // handの12関節を除く
       std::shared_ptr<ik_constraint2::JointLimitConstraint> constraint = std::make_shared<ik_constraint2::JointLimitConstraint>();
       constraint->joint() = robot->joint(i);
       constraints0.push_back(constraint);
@@ -47,14 +58,22 @@ namespace global_inverse_kinematics_solver_sample{
       std::vector<std::vector<std::string> > pairs {
         std::vector<std::string>{"RLEG_JOINT2","LLEG_JOINT2"}, std::vector<std::string>{"RLEG_JOINT2","LLEG_JOINT3"}, std::vector<std::string>{"RLEG_JOINT2","LLEG_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","RARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT2","RARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT2","RARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","RARM_JOINT6"}, std::vector<std::string>{"RLEG_JOINT2","LARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT2","LARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT2","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","LARM_JOINT6"}, std::vector<std::string>{"RLEG_JOINT3","LLEG_JOINT2"}, std::vector<std::string>{"RLEG_JOINT3","LLEG_JOINT3"}, std::vector<std::string>{"RLEG_JOINT3","LLEG_JOINT5"}, std::vector<std::string>{"RLEG_JOINT3","RARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT3","RARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT3","RARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT3","RARM_JOINT6"}, std::vector<std::string>{"RLEG_JOINT3","LARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT3","LARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT3","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT3","LARM_JOINT6"}, std::vector<std::string>{"RLEG_JOINT5","LLEG_JOINT2"}, std::vector<std::string>{"RLEG_JOINT5","LLEG_JOINT3"}, std::vector<std::string>{"RLEG_JOINT5","LLEG_JOINT5"}, std::vector<std::string>{"RLEG_JOINT5","RARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT5","RARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT5","RARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT5","RARM_JOINT6"}, std::vector<std::string>{"RLEG_JOINT5","LARM_JOINT3"}, std::vector<std::string>{"RLEG_JOINT5","LARM_JOINT4"}, std::vector<std::string>{"RLEG_JOINT5","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT5","LARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT2","RARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT2","RARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT2","RARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT2","RARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT2","LARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT2","LARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT2","LARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT2","LARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT3","RARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT3","RARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT3","RARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT3","RARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT3","LARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT3","LARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT3","LARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT3","LARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT5","RARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT5","RARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT5","RARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT5","RARM_JOINT6"}, std::vector<std::string>{"LLEG_JOINT5","LARM_JOINT3"}, std::vector<std::string>{"LLEG_JOINT5","LARM_JOINT4"}, std::vector<std::string>{"LLEG_JOINT5","LARM_JOINT5"}, std::vector<std::string>{"LLEG_JOINT5","LARM_JOINT6"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT2"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT3"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT4"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT5"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT6"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT2"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT3"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT4"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT5"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT6"}, std::vector<std::string>{"HEAD_JOINT1","RARM_JOINT3"}, std::vector<std::string>{"HEAD_JOINT1","RARM_JOINT4"}, std::vector<std::string>{"HEAD_JOINT1","RARM_JOINT5"}, std::vector<std::string>{"HEAD_JOINT1","RARM_JOINT6"}, std::vector<std::string>{"HEAD_JOINT1","LARM_JOINT3"}, std::vector<std::string>{"HEAD_JOINT1","LARM_JOINT4"}, std::vector<std::string>{"HEAD_JOINT1","LARM_JOINT5"}, std::vector<std::string>{"HEAD_JOINT1","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT0","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT0","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT0","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT2","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT2","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT2","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT2","WAIST"}, std::vector<std::string>{"RARM_JOINT3","LARM_JOINT3"}, std::vector<std::string>{"RARM_JOINT3","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT3","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT3","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT3","WAIST"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT0"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT2"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT3"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT4","WAIST"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT0"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT2"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT3"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT5","WAIST"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT0"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT2"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT3"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT6","LARM_JOINT6"}, std::vector<std::string>{"RARM_JOINT6","WAIST"}, std::vector<std::string>{"LARM_JOINT2","WAIST"}, std::vector<std::string>{"LARM_JOINT3","WAIST"}, std::vector<std::string>{"LARM_JOINT4","WAIST"}, std::vector<std::string>{"LARM_JOINT5","WAIST"}, std::vector<std::string>{"LARM_JOINT6","WAIST"}, std::vector<std::string>{"RLEG_JOINT2","LARM_JOINT7"}, std::vector<std::string>{"RLEG_JOINT3","LARM_JOINT7"}, std::vector<std::string>{"RLEG_JOINT5","LARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT2","LARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT3","LARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT5","LARM_JOINT7"}, std::vector<std::string>{"CHEST_JOINT1","LARM_JOINT7"}, std::vector<std::string>{"HEAD_JOINT1","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT0","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT2","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT3","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT4","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT5","LARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT7"}, std::vector<std::string>{"LARM_JOINT7","WAIST"}, std::vector<std::string>{"RLEG_JOINT2","RARM_JOINT7"}, std::vector<std::string>{"RLEG_JOINT3","RARM_JOINT7"}, std::vector<std::string>{"RLEG_JOINT5","RARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT2","RARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT3","RARM_JOINT7"}, std::vector<std::string>{"LLEG_JOINT5","RARM_JOINT7"}, std::vector<std::string>{"CHEST_JOINT1","RARM_JOINT7"}, std::vector<std::string>{"HEAD_JOINT1","RARM_JOINT7"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT0"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT2"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT3"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT4"}, std::vector<std::string>{"RARM_JOINT7","LARM_JOINT5"}, std::vector<std::string>{"RARM_JOINT7","WAIST"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT3"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT4"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT5"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT6"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT7"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT3"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT4"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT5"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT6"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT7"}, std::vector<std::string>{"CHEST_JOINT2","LARM_JOINT2"}, std::vector<std::string>{"CHEST_JOINT2","RARM_JOINT2"}, std::vector<std::string>{"RLEG_JOINT2","HANDBASE_R"}, std::vector<std::string>{"RLEG_JOINT3","HANDBASE_R"}, std::vector<std::string>{"RLEG_JOINT5","HANDBASE_R"}, std::vector<std::string>{"LLEG_JOINT2","HANDBASE_R"}, std::vector<std::string>{"LLEG_JOINT3","HANDBASE_R"}, std::vector<std::string>{"LLEG_JOINT5","HANDBASE_R"}, std::vector<std::string>{"WAIST","HANDBASE_R"}, std::vector<std::string>{"CHEST_JOINT1","HANDBASE_R"}, std::vector<std::string>{"CHEST_JOINT2","HANDBASE_R"}, std::vector<std::string>{"HEAD_JOINT1","HANDBASE_R"}, std::vector<std::string>{"HANDBASE_R","LARM_JOINT0"}, std::vector<std::string>{"HANDBASE_R","LARM_JOINT2"}, std::vector<std::string>{"HANDBASE_R","LARM_JOINT3"}, std::vector<std::string>{"HANDBASE_R","LARM_JOINT4"}, std::vector<std::string>{"HANDBASE_R","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","R_THUMB_JOINT1"}, std::vector<std::string>{"RLEG_JOINT3","R_THUMB_JOINT1"}, std::vector<std::string>{"RLEG_JOINT5","R_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT2","R_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT3","R_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT5","R_THUMB_JOINT1"}, std::vector<std::string>{"WAIST","R_THUMB_JOINT1"}, std::vector<std::string>{"CHEST_JOINT1","R_THUMB_JOINT1"}, std::vector<std::string>{"CHEST_JOINT2","R_THUMB_JOINT1"}, std::vector<std::string>{"HEAD_JOINT1","R_THUMB_JOINT1"}, std::vector<std::string>{"R_THUMB_JOINT1","LARM_JOINT0"}, std::vector<std::string>{"R_THUMB_JOINT1","LARM_JOINT2"}, std::vector<std::string>{"R_THUMB_JOINT1","LARM_JOINT3"}, std::vector<std::string>{"R_THUMB_JOINT1","LARM_JOINT4"}, std::vector<std::string>{"R_THUMB_JOINT1","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","HANDBASE_L"}, std::vector<std::string>{"RLEG_JOINT3","HANDBASE_L"}, std::vector<std::string>{"RLEG_JOINT5","HANDBASE_L"}, std::vector<std::string>{"LLEG_JOINT2","HANDBASE_L"}, std::vector<std::string>{"LLEG_JOINT3","HANDBASE_L"}, std::vector<std::string>{"LLEG_JOINT5","HANDBASE_L"}, std::vector<std::string>{"WAIST","HANDBASE_L"}, std::vector<std::string>{"CHEST_JOINT1","HANDBASE_L"}, std::vector<std::string>{"CHEST_JOINT2","HANDBASE_L"}, std::vector<std::string>{"HEAD_JOINT1","HANDBASE_L"}, std::vector<std::string>{"HANDBASE_L","LARM_JOINT0"}, std::vector<std::string>{"HANDBASE_L","LARM_JOINT2"}, std::vector<std::string>{"HANDBASE_L","LARM_JOINT3"}, std::vector<std::string>{"HANDBASE_L","LARM_JOINT4"}, std::vector<std::string>{"HANDBASE_L","LARM_JOINT5"}, std::vector<std::string>{"RLEG_JOINT2","L_THUMB_JOINT1"}, std::vector<std::string>{"RLEG_JOINT3","L_THUMB_JOINT1"}, std::vector<std::string>{"RLEG_JOINT5","L_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT2","L_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT3","L_THUMB_JOINT1"}, std::vector<std::string>{"LLEG_JOINT5","L_THUMB_JOINT1"}, std::vector<std::string>{"WAIST","L_THUMB_JOINT1"}, std::vector<std::string>{"CHEST_JOINT1","L_THUMB_JOINT1"}, std::vector<std::string>{"CHEST_JOINT2","L_THUMB_JOINT1"}, std::vector<std::string>{"HEAD_JOINT1","L_THUMB_JOINT1"}, std::vector<std::string>{"L_THUMB_JOINT1","LARM_JOINT0"}, std::vector<std::string>{"L_THUMB_JOINT1","LARM_JOINT2"}, std::vector<std::string>{"L_THUMB_JOINT1","LARM_JOINT3"}, std::vector<std::string>{"L_THUMB_JOINT1","LARM_JOINT4"}, std::vector<std::string>{"L_THUMB_JOINT1","LARM_JOINT5"}, std::vector<std::string>{"HANDBASE_R","HANDBASE_L"}, std::vector<std::string>{"R_THUMB_JOINT1","L_THUMB_JOINT1"}
       };
+      std::unordered_map<cnoid::LinkPtr, std::shared_ptr<btConvexShape> > collisionModels;
+      for(int i=0;i<robot->numLinks();i++){
+        collisionModels[robot->link(i)] = choreonoid_bullet::convertToBulletModel(robot->link(i)->collisionShape());
+      }
 
       for(int i=0;i<pairs.size();i++){
-        std::shared_ptr<ik_constraint2_vclip::VclipCollisionConstraint> constraint = std::make_shared<ik_constraint2_vclip::VclipCollisionConstraint>();
+        std::shared_ptr<ik_constraint2_bullet::BulletCollisionConstraint> constraint = std::make_shared<ik_constraint2_bullet::BulletCollisionConstraint>();
         constraint->A_link() = robot->link(pairs[i][0]);
         constraint->B_link() = robot->link(pairs[i][1]);
+        constraint->A_link_bulletModel() = constraint->A_link();
+        constraint->A_bulletModel().push_back(collisionModels[constraint->A_link()]);
+        constraint->B_link_bulletModel() = constraint->B_link();
+        constraint->B_bulletModel().push_back(collisionModels[constraint->B_link()]);
         constraint->tolerance() = 0.01;
         constraint->updateBounds(); // キャッシュを内部に作る. キャッシュを作ったあと、10スレッドぶんコピーする方が速い
-        constraints0.push_back(constraint);
+        constraints2.push_back(constraint);
       }
     }
 
@@ -68,7 +87,7 @@ namespace global_inverse_kinematics_solver_sample{
                                                                                                                                                                  -1.5,//origin_y
                                                                                                                                                                  -1.5,//origin_z
                                                                                                                                                                  0.5, // max_distance
-                                                                                                                                                                 false// propagate_negative_distances
+                                                                                                                                                                 true// propagate_negative_distances
                                                                                                                                                                  );
       EigenSTL::vector_Vector3d vertices;
       for(int i=0;i<desk->numLinks();i++){
@@ -77,21 +96,27 @@ namespace global_inverse_kinematics_solver_sample{
           vertices.push_back(desk->link(i)->T() * vertices_[j].cast<double>());
         }
       }
+      for(int i=0;i<floor->numLinks();i++){
+        std::vector<Eigen::Vector3f> vertices_ = ik_constraint2_distance_field::getSurfaceVertices(floor->link(i), 0.02);
+        for(int j=0;j<vertices_.size();j++){
+          vertices.push_back(floor->link(i)->T() * vertices_[j].cast<double>());
+        }
+      }
       field->addPointsToField(vertices);
       for(int i=0;i<robot->numLinks();i++){
         std::shared_ptr<ik_constraint2_distance_field::DistanceFieldCollisionConstraint> constraint = std::make_shared<ik_constraint2_distance_field::DistanceFieldCollisionConstraint>();
         constraint->A_link() = robot->link(i);
         constraint->field() = field;
-        constraint->tolerance() = 0.03;
+        constraint->tolerance() = 0.06;
+        constraint->minDistance() = 0.02;
         constraint->updateBounds(); // キャッシュを内部に作る. キャッシュを作ったあと、10スレッドぶんコピーする方が速い
-        constraints0.push_back(constraint);
-
+        constraints2.push_back(constraint);
       }
+
     }
 
 
-
-    while(true){
+    for(int trial=0;true;trial++){
 
       // reset manip pose
       robot->rootLink()->p() = cnoid::Vector3(0,0,1.0);
@@ -103,7 +128,8 @@ namespace global_inverse_kinematics_solver_sample{
           0.0, 0.0, -0.349066, 0.698132, -0.349066, 0.0,// lleg
           0.0, 0.0, 0.0, // torso
           0.0, 0.0, // head
-          0.0, 0.959931, -0.349066, -0.261799, -1.74533, -0.436332, 0.0, -0.785398,// rarm
+          //0.0, 0.959931, -0.349066, -0.261799, -1.74533, -0.436332, 0.0, -0.785398,// rarm
+          0.0, -1.50000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,// rarm
           0.0, 0.959931, 0.349066, 0.261799, -1.74533, 0.436332, 0.0, -0.785398,// larm
           0.0, 1.5708, 0.0, 0.0, 0.0, 0.0, // right_hand
           0.0, 1.5708, 0.0, 0.0, 0.0, 0.0 // left_hand
@@ -143,10 +169,10 @@ namespace global_inverse_kinematics_solver_sample{
         constraints1.push_back(constraint);
       }
 
-      std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0,constraints1};
+      std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0,constraints1, constraints2};
 
       // setup goals
-      std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > goalss;
+      std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > goals;
       std::shared_ptr<ik_constraint2::PositionConstraint> goalRaw;
       {
         // task: rarm to target.
@@ -156,76 +182,12 @@ namespace global_inverse_kinematics_solver_sample{
         goal->A_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
         goal->B_link() = nullptr;
         goal->B_localpos().translation() = cnoid::Vector3(0.55,-0.25,0.45); // below desk
-        goal->precision() = 3e-2;
         //goal->maxError() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-        goalss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >{goal});
+        goal->precision() = 3e-2;
+        goals.push_back(goal);
 
         goalRaw = goal;
       }
-      {
-        // task: rarm to target.
-        std::shared_ptr<ik_constraint2::PositionConstraint> goal = std::make_shared<ik_constraint2::PositionConstraint>();
-        goal->A_link() = robot->link("RARM_JOINT7");
-        goal->A_localpos().translation() = cnoid::Vector3(0.0,0.055,-0.217);
-        goal->A_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-        goal->B_link() = nullptr;
-        goal->B_localpos().translation() = cnoid::Vector3(0.55,-0.25,0.15); // below desk
-        //goal->maxError() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-        goal->precision() = 3e-2;
-        goalss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >{goal});
-
-        goalRaw = goal;
-      }
-      for(int i=0;i<5;i++){
-        for(int j=0;j<5;j++){
-          // task: rarm to target.
-          std::shared_ptr<ik_constraint2::PositionConstraint> goal = std::make_shared<ik_constraint2::PositionConstraint>();
-          goal->A_link() = robot->link("RARM_JOINT7");
-          goal->A_localpos().translation() = cnoid::Vector3(0.0,0.055,-0.217);
-          goal->A_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-          goal->B_link() = nullptr;
-          goal->B_localpos().translation() = cnoid::Vector3(0.35 + i * 0.1,-0.25 + j * 0.1, 0.9); // top desk
-          goal->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-          //goal->maxError() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-          goal->precision() = 3e-2;
-          goalss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >{goal});
-
-          goalRaw = goal;
-        }
-      }
-      for(int i=0;i<5;i++){
-        for(int j=0;j<5;j++){
-          // task: rarm to target.
-          std::shared_ptr<ik_constraint2::PositionConstraint> goal = std::make_shared<ik_constraint2::PositionConstraint>();
-          goal->A_link() = robot->link("RARM_JOINT7");
-          goal->A_localpos().translation() = cnoid::Vector3(0.0,0.055,-0.217);
-          goal->A_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-          goal->B_link() = nullptr;
-          goal->B_localpos().translation() = cnoid::Vector3(0.35 + i * 0.1,-0.25 + j * 0.1,0.10); // below desk
-          goal->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-          //goal->maxError() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-          goal->precision() = 3e-2;
-          goalss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >{goal});
-
-          goalRaw = goal;
-        }
-      }
-      {
-        // task: rarm to target.
-        std::shared_ptr<ik_constraint2::PositionConstraint> goal = std::make_shared<ik_constraint2::PositionConstraint>();
-        goal->A_link() = robot->link("RARM_JOINT7");
-        goal->A_localpos().translation() = cnoid::Vector3(0.0,0.055,-0.217);
-        goal->A_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-        goal->B_link() = nullptr;
-        goal->B_localpos().translation() = cnoid::Vector3(-0.45,0.25,0.10); // below desk
-        goal->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(1.5708, cnoid::Vector3(0,1,0)));
-        //goal->maxError() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-        goal->precision() = 3e-2;
-        goalss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >{goal});
-
-        goalRaw = goal;
-      }
-
 
       std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > nominals;
       {
@@ -254,80 +216,92 @@ namespace global_inverse_kinematics_solver_sample{
       global_inverse_kinematics_solver::GIKParam param;
       param.debugLevel=0;
       param.range = 0.5; // 0.2よりも0.3の方が速い. sample一回につきprojectGoalを行うので、rangeはなるべく大きい方がいい.
-      param.delta = 0.4; // 大きければ大きいほど速いはずだが、干渉計算や補間の正確さが犠牲になる. 0.2だと正確. 0.4だと速い
+      param.delta = 0.2; // 大きければ大きいほど速いはずだが、干渉計算や補間の正確さが犠牲になる. 0.2だと正確. 0.4だと速いが薄い障害物をsimplify時に貫通する.
       param.goalBias = 0.2; // 0.05よりも0.2や0.3の方が速い. goalSampingはIKの変位が大きいので、この値が大きいとsample1回あたりの時間が長くなるデメリットもある.
-      param.timeout = 5.0;
+      //param.goalBias = 1.0; // RRTは0.2の方がいい? ESTは0.2の方がいい? KPIECEは
+      param.timeout = 30.0;
+      param.planner = 0;
+      param.nearMaxError = 0.05; // 0.05だと安心. 0.2だと薄い障害物を貫通する. weも同時に小さくせよ(1e2だと安心. 1e1でも大丈夫で少し速い). 各constraintのmaxErrorにも注意せよ
       param.projectLink.push_back(goalRaw->A_link());
       param.projectLocalPose = goalRaw->A_localpos();
       param.projectCellSize = 0.2; // 0.05よりも0.1の方が速い. 0.3よりも0.2の方が速い? 2m * 2m * 2mの空間を動くとして、samplingを200個くらいまでにしたければ、cellの大きさもそれなりに大きくないとスカスカになってしまう.
       param.viewer = viewer;
       param.drawLoop = 1;
       param.threads = 20;
-      //param.pikParam.we = 5e2;
+      param.pikParam.we = 1e2;
       //param.pikParam.wmax = 1e0;
       param.pikParam.convergeThre = 5e-2; // 2.5e-2は小さすぎる. param.pikParam.debugLevel = 1にして観察せよ. goalのprecision()の値をこれにあわせて大きくせよ
       param.pikParam.debugLevel = 0;
       param.pikParam.pathOutputLoop = 5;
-      //param.nearMaxError = 0.1; // 0.05でも0.1でもそんなに変わらない. 0.1だとQPが不安定になりやすい. 各constraintのmaxErrorも同じ値にせよ
-      std::vector<std::shared_ptr<std::vector<std::vector<double> > > > path;
-      for(int i=0;i<goalss.size();i++){
-        path.push_back(std::make_shared<std::vector<std::vector<double> > >());
-      }
-      bool solved = global_inverse_kinematics_solver::solveGIK(variables,
-                                                               constraints,
-                                                               goalss,
-                                                               nominals,
-                                                               param,
-                                                               path);
+      param.pikParam.satisfiedConvergeLevel = int(constraints.size())-1;
+      std::shared_ptr<std::vector<std::vector<double> > > path = std::make_shared<std::vector<std::vector<double> > >();
 
-      // for(size_t i=0;i<constraints.size();i++){
-      //   for(size_t j=0;j<constraints[i].size();j++){
-      //     constraints[i][j]->debugLevel() = 0;//not debug
-      //     constraints[i][j]->updateBounds();
-      //     if(constraints[i][j]->isSatisfied()) std::cerr << "constraint " << i << " " << j << ": satisfied"<< std::endl;
-      //     else std::cerr << "constraint " << i << " " << j << ": NOT satisfied"<< std::endl;
-      //   }
-      // }
-      // for(size_t i=0;i<goals.size();i++){
-      //   goals[i]->debugLevel() = 0;//not debug
-      //   goals[i]->updateBounds();
-      //   if(goals[i]->isSatisfied()) std::cerr << "goal " << i << ": satisfied"<< std::endl;
-      //   else std::cerr << "goal " << i << ": NOT satisfied"<< std::endl;
-      // }
+      if(trial % 2 == 0){
+        bool solved = global_inverse_kinematics_solver::solveGIK(variables,
+                                                                 constraints,
+                                                                 goals,
+                                                                 nominals,
+                                                                 param,
+                                                                 path);
+        std::cerr << "solved with nominal: " << solved << std::endl;
+      }else{
+        bool solved = global_inverse_kinematics_solver::solveGIK(variables,
+                                                                 constraints,
+                                                                 goals,
+                                                                 std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(),
+                                                                 param,
+                                                                 path);
+        std::cerr << "solved without nominal: " << solved << std::endl;
+      }
+
+      // optimization
+      param.debugLevel = 2;
+      param.postpikParam.debugLevel = 1;
+      param.postpikParam.maxIteration = 5;
+      param.postpikParam.threadsNum = 10;
+      param.shortcutThre = 0.2; // 0.08:安全(細いものを貫通しない). 0.3:高速.
+      if(trial % 2 == 0){
+        global_inverse_kinematics_solver::postProcess(variables,
+                                                      constraints,
+                                                      std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(),
+                                                      nominals,
+                                                      path,
+                                                      param);
+      }else{
+        global_inverse_kinematics_solver::postProcess(variables,
+                                                      constraints,
+                                                      goals,
+                                                      nominals,
+                                                      path,
+                                                      param);
+      }
 
       // main loop
-      for(int p=0;p<path.size();p++){
-        if(path[p]->size() == 0) {
-          std::cerr << "solved: " << 0 << std::endl;
-          continue;
-        }else{
-          std::cerr << "solved: " << 1 << std::endl;
-        }
-        for(int i=0;i<path[p]->size();i++){
-          global_inverse_kinematics_solver::frame2Link(path[p]->at(i),variables);
-          robot->calcForwardKinematics(false);
-          robot->calcCenterOfMass();
+      for(int i=0;i<path->size();i++){
+        global_inverse_kinematics_solver::frame2Link(path->at(i),variables);
+        robot->calcForwardKinematics(false);
+        robot->calcCenterOfMass();
 
-          std::vector<cnoid::SgNodePtr> markers;
-          for(int j=0;j<constraints.size();j++){
-            for(int k=0;k<constraints[j].size(); k++){
-              constraints[j][k]->debugLevel() = 0;
-              constraints[j][k]->updateBounds();
-              const std::vector<cnoid::SgNodePtr>& marker = constraints[j][k]->getDrawOnObjects();
-              std::copy(marker.begin(), marker.end(), std::back_inserter(markers));
-            }
-          }
-          for(int k=0;k<goalss[p].size();k++){
-            goalss[p][k]->debugLevel() = 0;
-            goalss[p][k]->updateBounds();
-            const std::vector<cnoid::SgNodePtr>& marker = goalss[p][k]->getDrawOnObjects();
+        std::vector<cnoid::SgNodePtr> markers;
+        for(int j=0;j<constraints.size();j++){
+          for(int k=0;k<constraints[j].size(); k++){
+            constraints[j][k]->debugLevel() = 0;
+            constraints[j][k]->updateBounds();
+            const std::vector<cnoid::SgNodePtr>& marker = constraints[j][k]->getDrawOnObjects();
             std::copy(marker.begin(), marker.end(), std::back_inserter(markers));
           }
-          viewer->drawOn(markers);
-          viewer->drawObjects();
-
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+        for(int j=0;j<goals.size();j++){
+          goals[j]->debugLevel() = 0;
+          goals[j]->updateBounds();
+          const std::vector<cnoid::SgNodePtr>& marker = goals[j]->getDrawOnObjects();
+          std::copy(marker.begin(), marker.end(), std::back_inserter(markers));
+        }
+        viewer->drawOn(markers);
+        viewer->drawObjects();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

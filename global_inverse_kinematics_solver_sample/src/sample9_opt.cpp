@@ -207,9 +207,6 @@ namespace global_inverse_kinematics_solver_sample{
       //param.goalBias = 1.0; // RRTは0.2の方がいい? ESTは0.2の方がいい? KPIECEは
       param.timeout = 30.0;
       param.planner = 0;
-      param.useProjection = false;
-      param.projectionRange = 0.04; // 0.05だと、collision avoidanceがうまくいかず板を貫通する.
-      param.projectionTrapThre = 0.1; // samplerobotは0.01, jaxonは0.03
       param.nearMaxError = 0.05; // 0.05だと安心. 0.2だと薄い障害物を貫通する. weも同時に小さくせよ(1e2だと安心. 1e1でも大丈夫で少し速い). 各constraintのmaxErrorにも注意せよ
       param.projectLink.push_back(goalRaw->A_link());
       param.projectLocalPose = goalRaw->A_localpos();

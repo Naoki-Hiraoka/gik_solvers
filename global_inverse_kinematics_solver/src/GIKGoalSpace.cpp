@@ -45,8 +45,9 @@ namespace global_inverse_kinematics_solver{
 
 
   bool GIKGoalSpace::sampleTo(ompl::base::State *state, const ompl::base::State *source, double* distance) const {
-    bool ret = goalStateSpace_->getGIKConstraint()->projectNearValidWithNominal(state, source, distance); // goal projection時についでにnominal-poseに近づけることで、tree全体としてnonimalposeに近づけて、逆運動学をときやすくする.
+    bool ret = stateSpace_->getGIKConstraint()->projectGoalWithNominal(state, source, goals_, nominals_, distance); // goal projection時についでにnominal-poseに近づけることで、tree全体としてnonimalposeに近づけて、逆運動学をときやすくする.
     si_->enforceBounds(state);
+
     return ret;
   }
 

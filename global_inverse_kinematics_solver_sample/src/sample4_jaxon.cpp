@@ -13,7 +13,7 @@
 #include <choreonoid_bullet/choreonoid_bullet.h>
 
 namespace global_inverse_kinematics_solver_sample{
-  void sample4_jaxon(bool rejection){
+  void sample4_jaxon(){
     cnoid::BodyLoader bodyLoader;
 
     // load robot
@@ -35,7 +35,6 @@ namespace global_inverse_kinematics_solver_sample{
     viewer->drawObjects(true);
 
     // setup constraints
-    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejections;
     std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > constraints0;
     std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > constraints1; // 自己干渉のvclip計算などに時間がかかるので、使いまわしたほうがいい. collisionはsoft constraintにした方が安定する
 
@@ -66,11 +65,7 @@ namespace global_inverse_kinematics_solver_sample{
         constraint->B_bulletModel().push_back(collisionModels[constraint->B_link()]);
         constraint->tolerance() = 0.01;
         constraint->updateBounds(); // キャッシュを内部に作る. キャッシュを作ったあと、10スレッドぶんコピーする方が速い
-        if(rejection){
-          rejections.push_back(constraint);
-        }else{
-          constraints1.push_back(constraint);
-        }
+        constraints1.push_back(constraint);
       }
     }
 
@@ -101,11 +96,7 @@ namespace global_inverse_kinematics_solver_sample{
         constraint->tolerance() = 0.04; // resolutionの倍数にせよ. 境界で振動する.
         constraint->minDistance() = 0.02;
         constraint->updateBounds(); // キャッシュを内部に作る. キャッシュを作ったあと、10スレッドぶんコピーする方が速い
-        if(rejection){
-          rejections.push_back(constraint);
-        }else{
-          constraints1.push_back(constraint);
-        }
+        constraints1.push_back(constraint);
       }
 
     }
@@ -216,9 +207,6 @@ namespace global_inverse_kinematics_solver_sample{
       //param.goalBias = 1.0; // RRTは0.2の方がいい? ESTは0.2の方がいい? KPIECEは
       param.timeout = 30.0;
       param.planner = 0;
-      param.useProjection = false;
-      param.projectionRange = 0.04; // 0.05だと、collision avoidanceがうまくいかず板を貫通する.
-      param.projectionTrapThre = 0.1; // samplerobotは0.01, jaxonは0.03
       param.nearMaxError = 0.05; // 0.05だと安心. 0.2だと薄い障害物を貫通する. weも同時に小さくせよ(1e2だと安心. 1e1でも大丈夫で少し速い). 各constraintのmaxErrorにも注意せよ
       param.projectLink.push_back(goalRaw->A_link());
       param.projectLocalPose = goalRaw->A_localpos();
@@ -237,7 +225,6 @@ namespace global_inverse_kinematics_solver_sample{
                                                                constraints,
                                                                goals,
                                                                nominals,
-                                                               rejections,
                                                                param,
                                                                path);
 
@@ -264,7 +251,6 @@ namespace global_inverse_kinematics_solver_sample{
                                                                 constraints,
                                                                 goals,
                                                                 nominals,
-                                                                rejections,
                                                                 param,
                                                                 path2);
       std::copy(path2->begin(), path2->end(), std::back_inserter(*path));

@@ -31,31 +31,14 @@ namespace global_inverse_kinematics_solver_sample{
   };
   typedef cnoid::ref_ptr<sample3_deskItem> sample3_deskItemPtr;
 
-  void sample4_jaxon(bool rejection);
+  void sample4_jaxon();
   class sample4_jaxonItem : public choreonoid_viewer::ViewerBaseItem {
   public:
     static void initializeClass(cnoid::ExtensionManager* ext){ ext->itemManager().registerClass<sample4_jaxonItem>("sample4_jaxonItem"); }
   protected:
-    virtual void main() override{ sample4_jaxon(false); return; }
+    virtual void main() override{ sample4_jaxon(); return; }
   };
   typedef cnoid::ref_ptr<sample4_jaxonItem> sample4_jaxonItemPtr;
-
-  class sample4_jaxonrejItem : public choreonoid_viewer::ViewerBaseItem {
-  public:
-    static void initializeClass(cnoid::ExtensionManager* ext){ ext->itemManager().registerClass<sample4_jaxonrejItem>("sample4_jaxonrejItem"); }
-  protected:
-    virtual void main() override{ sample4_jaxon(true); return; }
-  };
-  typedef cnoid::ref_ptr<sample4_jaxonrejItem> sample4_jaxonrejItemPtr;
-
-  void sample5_jaxon();
-  class sample5_jaxonItem : public choreonoid_viewer::ViewerBaseItem {
-  public:
-    static void initializeClass(cnoid::ExtensionManager* ext){ ext->itemManager().registerClass<sample5_jaxonItem>("sample5_jaxonItem"); }
-  protected:
-    virtual void main() override{ sample5_jaxon(); return; }
-  };
-  typedef cnoid::ref_ptr<sample5_jaxonItem> sample5_jaxonItemPtr;
 
   void sample6_root();
   class sample6_rootItem : public choreonoid_viewer::ViewerBaseItem {
@@ -65,15 +48,6 @@ namespace global_inverse_kinematics_solver_sample{
     virtual void main() override{ sample6_root(); return; }
   };
   typedef cnoid::ref_ptr<sample6_rootItem> sample6_rootItemPtr;
-
-  void sample7_rootrej();
-  class sample7_rootrejItem : public choreonoid_viewer::ViewerBaseItem {
-  public:
-    static void initializeClass(cnoid::ExtensionManager* ext){ ext->itemManager().registerClass<sample7_rootrejItem>("sample7_rootrejItem"); }
-  protected:
-    virtual void main() override{ sample7_rootrej(); return; }
-  };
-  typedef cnoid::ref_ptr<sample7_rootrejItem> sample7_rootrejItemPtr;
 
   void sample8_opt();
   class sample8_optItem : public choreonoid_viewer::ViewerBaseItem {
@@ -93,6 +67,15 @@ namespace global_inverse_kinematics_solver_sample{
   };
   typedef cnoid::ref_ptr<sample9_optItem> sample9_optItemPtr;
 
+  void sample10_invalid();
+  class sample10_invalidItem : public choreonoid_viewer::ViewerBaseItem {
+  public:
+    static void initializeClass(cnoid::ExtensionManager* ext){ ext->itemManager().registerClass<sample10_invalidItem>("sample10_invalidItem"); }
+  protected:
+    virtual void main() override{ sample10_invalid(); return; }
+  };
+  typedef cnoid::ref_ptr<sample10_invalidItem> sample10_invalidItemPtr;
+
   class GlobalInverseKinematicsSolverSamplePlugin : public cnoid::Plugin
   {
   public:
@@ -107,12 +90,10 @@ namespace global_inverse_kinematics_solver_sample{
       sample2_deskItem::initializeClass(this);
       sample3_deskItem::initializeClass(this);
       sample4_jaxonItem::initializeClass(this);
-      sample4_jaxonrejItem::initializeClass(this);
-      sample5_jaxonItem::initializeClass(this);
       sample6_rootItem::initializeClass(this);
-      sample7_rootrejItem::initializeClass(this);
       sample8_optItem::initializeClass(this);
       sample9_optItem::initializeClass(this);
+      sample10_invalidItem::initializeClass(this);
       return true;
     }
   };
