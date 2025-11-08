@@ -18,12 +18,11 @@
     uri: https://github.com/Naoki-Hiraoka/ik_solvers2.git
     version: 2.0
 
-# melodicにaptで入る1.4.2にはGoalSpace.hが無いので
-# https://github.com/ompl/ompl/pull/1020 の問題があるので
+# noeticにaptで入る1.6.0には https://github.com/ompl/ompl/pull/1020 の問題があるので
 - git:
     local-name: ompl
-    uri: https://github.com/Naoki-Hiraoka/ompl.git
-    version: 1.6.0-fixed
+    uri: https://github.com/ompl/ompl.git
+    version: 1.7.0
 - git:
     local-name: ompl_near_projection
     uri: https://github.com/Naoki-Hiraoka/ompl_near_projection.git
