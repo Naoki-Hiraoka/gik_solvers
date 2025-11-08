@@ -130,7 +130,6 @@ namespace global_inverse_kinematics_solver{
         bounds.low = std::vector<double>{variables[i]->p()[0]-maxtranslation,variables[i]->p()[1]-maxtranslation,variables[i]->p()[2]-maxtranslation};
         bounds.high = std::vector<double>{variables[i]->p()[0]+maxtranslation,variables[i]->p()[1]+maxtranslation,variables[i]->p()[2]+maxtranslation};
         se3StateSpace->setBounds(bounds);
-        se3StateSpace->setStateSamplerAllocator(&allocGIKCompoundStateSampler); // weightImportanceを常に1にすることで、plannerのrangeに設定した値だけ各関節(rootLink含む)が均等に動くようになる.
         ambientSpace = ambientSpace + se3StateSpace;
       }
     }
@@ -178,8 +177,13 @@ namespace global_inverse_kinematics_solver{
   // ompl::base::CompoundStateSpace::allocDefaultStateSamplerとの差異は、weightImportanceが常に1である点. デフォルトを使うと、SE3StateSpaceのtranslation, rotationをsampleするときの変位が、関節(RealVectorStateSpace)をsampleするときの半分になってしまい、rootLinkが動きにくくなってしまう.
   ompl::base::StateSamplerPtr allocGIKCompoundStateSampler(const ompl::base::StateSpace *space) {
     auto ss(std::make_shared<ompl::base::CompoundStateSampler>(space));
-    for (unsigned int i = 0; i < space->as<ompl::base::CompoundStateSpace>()->getSubspaceCount(); ++i)
-      ss->addSampler(space->as<ompl::base::CompoundStateSpace>()->getSubspace(i)->allocStateSampler(), 1.0/*weights_[i] / weightSum_*/);
+    for (unsigned int i = 0; i < space->as<ompl::base::CompoundStateSpace>()->getSubspaceCount(); ++i) {
+      ompl::base::StateSpacePtr subSpace = space->as<ompl::base::CompoundStateSpace>()->getSubspace(i);
+      if(std::dynamic_pointer_cast<ompl::base::CompoundStateSpace>(subSpace)){
+        subSpace->setStateSamplerAllocator(&allocGIKCompoundStateSampler); // weightImportanceを常に1にすることで、plannerのrangeに設定した値だけ各関節(rootLink含む)が均等に動くようになる.
+      }
+      ss->addSampler(subSpace->allocStateSampler(), 1.0/*weights_[i] / weightSum_*/);
+    }
     return ss;
   }
 
