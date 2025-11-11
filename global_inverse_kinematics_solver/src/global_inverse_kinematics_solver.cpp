@@ -205,11 +205,10 @@ namespace global_inverse_kinematics_solver{
     // solutionPath.check()は行わない
 
     if(calculate_path){
-      ompl::geometric::PathGeometricPtr solutionPath = std::dynamic_pointer_cast<ompl::geometric::PathGeometric>(problemDefinition->getSolutionPath());
-      if(solutionPath == nullptr) {
+      if(!problemDefinition->hasSolution()) {
         path->resize(0);
-
       }else{
+        ompl::geometric::PathGeometricPtr solutionPath = std::dynamic_pointer_cast<ompl::geometric::PathGeometric>(problemDefinition->getSolutionPath());
 
         if(param.debugLevel > 1){
           solutionPath->print(std::cout);
