@@ -18,22 +18,17 @@ namespace global_inverse_kinematics_solver{
     std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > goalss{goals};
     std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > nominalss{nominals};
     std::shared_ptr<UintQueue> modelQueue = std::make_shared<UintQueue>();
-    std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
+    std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps(1);
     GIKParam param2(param);
     modelQueue->push(0);
 
     if(param.threads >= 2){
       std::set<cnoid::BodyPtr> bodies = getBodies(variables);
-      std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
-      for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
-        modelMap[*it] = (*it)->clone();
-      }
-      modelMaps.push_back(modelMap); // cloneしたbodyがデストラクトされないように、保管しておく
       for(int i=1;i<param.threads;i++){
         modelQueue->push(i);
         std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
         for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
-          modelMap[*it] = (*it)->clone();
+          modelMap[*it] = (*it)->clone(); // cloneしたbodyがデストラクトされないように、保管しておく
         }
         modelMaps.push_back(modelMap);
         variabless.push_back(std::vector<cnoid::LinkPtr>(variables.size()));
@@ -264,7 +259,7 @@ namespace global_inverse_kinematics_solver{
     std::vector<std::vector<cnoid::LinkPtr> > variabless{variables};
     std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > > constraintss{constraints};
     std::shared_ptr<UintQueue> modelQueue = std::make_shared<UintQueue>();
-    std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
+    std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps(1);
     GIKParam param2(param);
     modelQueue->push(0);
 
