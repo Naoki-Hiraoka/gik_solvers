@@ -42,6 +42,8 @@ namespace global_inverse_kinematics_solver{
     double postpikParam_wmaxVec2 = 1e-6; // 末尾要素. // 1e-1だと安定だが収束が悪い. それ以下だと1回で動きすぎてdistance field constraintのinvalid領域に入ってしまう. distance field constraintのtoleranceを大きくした上で、この値を小さくせよ.
     double postpikParam_convergeThre = 1e-1; // この値掛けるsqrt(path.size()). // 1e-1はヒューマノイド用なので自由度が少ない場合は1e-2などにせよ
 
+    std::shared_ptr<std::mutex> modelMutex; // variablesのclone, デストラクタに関するmutex
+
     GIKParam(){
       pikParam.we = 1e2; // 逆運動学が振動しないこと優先. 1e0だと不安定. 1e3だと大きすぎる
       pikParam.maxIteration = 100; // max iterationに達するか、convergeしたら終了する. isSatisfiedでは終了しない. ゼロ空間でreference angleに可能な限り近づけるタスクがあるので. 1 iterationで0.5msくらいかかるので、stateを1つ作るための時間の上限が見積もれる. 一見、この値を小さくすると早くなりそうだが、goalSampling時に本当はgoalに到達できるのにその前に返ってしまうことで遅くなることがあるため、少ないiterationでも収束するように他のパラメータを調整したほうがいい

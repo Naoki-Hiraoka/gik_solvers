@@ -27,8 +27,21 @@ namespace global_inverse_kinematics_solver{
       for(int i=1;i<param.threads;i++){
         modelQueue->push(i);
         std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
-        for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
-          modelMap[*it] = (*it)->clone(); // cloneしたbodyがデストラクトされないように、保管しておく
+        {
+          /*
+             cnoid::Body::clone()は、各リンクのメッシュは複製せず、ポインタで共有する.
+             この仕様は高速な複製のために有益である.
+             一方で、同一のメッシュオブジェクトを共有するBody間で、
+               - Body::clone()
+               - Body::~Body()
+             などがスレッドセーフでないことに注意が必要である.
+             solveGIK関数をマルチスレッドから呼ぶ場合に問題になる場合がある.
+          */
+          std::shared_ptr<std::lock_guard<std::mutex> > guard;
+          if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+          for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
+            modelMap[*it] = (*it)->clone(); // cloneしたbodyがデストラクトされないように、保管しておく
+          }
         }
         modelMaps.push_back(modelMap);
         variabless.push_back(std::vector<cnoid::LinkPtr>(variables.size()));
@@ -56,13 +69,26 @@ namespace global_inverse_kinematics_solver{
       }
     }
 
-    return solveGIK(variabless,
-                    constraintss,
-                    goalss,
-                    nominalss,
-                    modelQueue,
-                    param2,
-                    path);
+    bool result = solveGIK(variabless,
+                           constraintss,
+                           goalss,
+                           nominalss,
+                           modelQueue,
+                           param2,
+                           path);
+
+    {
+      std::shared_ptr<std::lock_guard<std::mutex> > guard;
+      if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+      variabless.clear();
+      constraintss.clear();
+      goalss.clear();
+      nominalss.clear();
+      modelMaps.clear();
+      param2.projectLink.clear();
+    }
+
+    return result;
   }
 
   bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
@@ -268,8 +294,21 @@ namespace global_inverse_kinematics_solver{
       for(int i=1;i<param.threads;i++){
         modelQueue->push(i);
         std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
-        for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
-          modelMap[*it] = (*it)->clone();
+        {
+          /*
+             cnoid::Body::clone()は、各リンクのメッシュは複製せず、ポインタで共有する.
+             この仕様は高速な複製のために有益である.
+             一方で、同一のメッシュオブジェクトを共有するBody間で、
+               - Body::clone()
+               - Body::~Body()
+             などがスレッドセーフでないことに注意が必要である.
+             solveGIK関数をマルチスレッドから呼ぶ場合に問題になる場合がある.
+          */
+          std::shared_ptr<std::lock_guard<std::mutex> > guard;
+          if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+          for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
+            modelMap[*it] = (*it)->clone(); // cloneしたbodyがデストラクトされないように、保管しておく
+          }
         }
         modelMaps.push_back(modelMap); // cloneしたbodyがデストラクトされないように、保管しておく
         variabless.push_back(std::vector<cnoid::LinkPtr>(variables.size()));
@@ -289,12 +328,22 @@ namespace global_inverse_kinematics_solver{
       }
     }
 
-    return solveGIK(variabless,
-                    constraintss,
-                    goal,
-                    modelQueue,
-                    param2,
-                    path);
+    bool result = solveGIK(variabless,
+                           constraintss,
+                           goal,
+                           modelQueue,
+                           param2,
+                           path);
+    {
+      std::shared_ptr<std::lock_guard<std::mutex> > guard;
+      if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+      variabless.clear();
+      constraintss.clear();
+      modelMaps.clear();
+      param2.projectLink.clear();
+    }
+
+    return result;
   }
 
   bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
