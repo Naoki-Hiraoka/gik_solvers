@@ -78,7 +78,7 @@ namespace global_inverse_kinematics_solver{
 
   bool solveGIK(const std::vector<std::vector<cnoid::LinkPtr> >& variables, // 0: modelQueue, 1: variables
                 const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, // 0: modelQueue, 1: constriant priority 2: constraints
-                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, // 0: modelQueue. 1: projection priority 2: goals(AND).
+                const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, // 0: modelQueue. 1: projection priority 2: goals.
                 const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, // 0: modelQueue, 1: nominals
                 std::shared_ptr<UintQueue> modelQueue,
                 const GIKParam& param,
