@@ -25,8 +25,6 @@ namespace global_inverse_kinematics_solver{
         ikConstraints_.push_back(constraints_[i]);
         ikConstraints_.back().push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >());
         goalIkConstraints_.push_back(constraints_[i]);
-        goalIkConstraints_.back().push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >());
-        goalIkConstraints_.back().push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >());
         tasks_.push_back(std::vector<std::shared_ptr<prioritized_qp_base::Task> >());
       }
     }
@@ -38,7 +36,7 @@ namespace global_inverse_kinematics_solver{
     // distance: always 0
     virtual bool projectNearValid(ompl::base::State *state, const ompl::base::State *near, double* distance = nullptr) const override;
     // distance: distance to goal
-    virtual bool projectGoalWithNominal(ompl::base::State *state, const ompl::base::State *near, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, double* distance = nullptr) const;
+    virtual bool projectGoalWithNominal(ompl::base::State *state, const ompl::base::State *near, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, double* distance = nullptr) const;
     virtual double distance (const ompl::base::State *state) const override;
     virtual bool isSatisfied (const ompl::base::State *state) const override;
 

@@ -244,6 +244,7 @@ namespace global_inverse_kinematics_solver_sample{
       param.debugLevel = 2;
       param.postpikParam.debugLevel = 1;
       param.postpikParam.maxIteration = 5;
+      param.postpikParam.threadsNum = 10;
       param.shortcutThre = 0.2; // 0.08:安全(細いものを貫通しない). 0.3:高速.
       if(trial % 2 == 0){
         global_inverse_kinematics_solver::postProcess(variables,
@@ -289,6 +290,9 @@ namespace global_inverse_kinematics_solver_sample{
 
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    while(true){
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 

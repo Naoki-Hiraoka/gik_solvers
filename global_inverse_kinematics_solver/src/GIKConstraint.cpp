@@ -89,15 +89,19 @@ namespace global_inverse_kinematics_solver{
     return true;
   }
 
-  bool GIKConstraint::projectGoalWithNominal(ompl::base::State *state, const ompl::base::State *near, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, double* distance) const{
+  bool GIKConstraint::projectGoalWithNominal(ompl::base::State *state, const ompl::base::State *near, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals, double* distance) const{
     const unsigned int m = modelQueue_->pop();
 
+    // resize goalIkConstraints
+    goalIkConstraints_[m].resize(ikConstraints_[m].size()+goals[m].size()+1);
     {
-      // setup nearConstraints
-      std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& goalConstraints = goalIkConstraints_[m][goalIkConstraints_[m].size()-2];
-      goalConstraints.resize(goals[m].size());
-      for(int i=0;i<goals[m].size(); i++){
-        goalConstraints[i] = goals[m][i];
+      // setup goalConstraints
+      for(int g=0;g<goals[m].size();g++){
+        std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& goalConstraints = goalIkConstraints_[m][ikConstraints_[m].size()+g];
+        goalConstraints.resize(goals[m][g].size());
+        for(int i=0;i<goals[m][g].size(); i++){
+          goalConstraints[i] = goals[m][g][i];
+        }
       }
     }
 
@@ -123,8 +127,10 @@ namespace global_inverse_kinematics_solver{
 
     bool satisfied = true;
     for(size_t j=0;j<goals[m].size()&&satisfied;j++){
-      if(!goals[m][j]->isSatisfied()) {
-        satisfied = false;
+      for(size_t i=0;i<goals[m][j].size()&&satisfied;i++){
+        if(!goals[m][j][i]->isSatisfied()) {
+          satisfied = false;
+        }
       }
     }
 
@@ -144,8 +150,10 @@ namespace global_inverse_kinematics_solver{
     if(distance != nullptr){
       double squaredDistance = 0.0;
       for(size_t j=0;j<goals[m].size();j++){
+        for(size_t i=0;i<goals[m][j].size();i++){
         //constraints_[m][i][j]->updateBounds();
-        squaredDistance += std::pow(goals[m][j]->distance(), 2.0);
+          squaredDistance += std::pow(goals[m][j][i]->distance(), 2.0);
+        }
       }
       *distance = std::sqrt(squaredDistance);
     }

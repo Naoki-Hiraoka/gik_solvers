@@ -301,6 +301,9 @@ namespace global_inverse_kinematics_solver_sample{
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+    while(true){
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
   }
 
 }

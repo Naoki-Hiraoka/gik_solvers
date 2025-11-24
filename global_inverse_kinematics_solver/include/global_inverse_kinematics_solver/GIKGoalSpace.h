@@ -10,7 +10,7 @@ namespace global_inverse_kinematics_solver{
 
   class GIKGoalSpace : public ompl_near_projection::NearGoalSpace{
   public:
-    GIKGoalSpace(const ompl::base::SpaceInformationPtr &si, const ompl::base::StateSpacePtr ambientSpace, std::shared_ptr<UintQueue>& modelQueue, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, const std::vector<std::vector<cnoid::LinkPtr> >& variables, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals) :
+    GIKGoalSpace(const ompl::base::SpaceInformationPtr &si, const ompl::base::StateSpacePtr ambientSpace, std::shared_ptr<UintQueue>& modelQueue, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints, const std::vector<std::vector<cnoid::LinkPtr> >& variables, const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& goals, const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& nominals) :
       NearGoalSpace(si),
       modelQueue_(modelQueue),
       variables_(variables),
@@ -33,7 +33,7 @@ namespace global_inverse_kinematics_solver{
     GIKStateSpacePtr stateSpace_; // goalSpaceではなく、constrainedSpace
     mutable std::shared_ptr<UintQueue> modelQueue_;
     const std::vector<std::vector<cnoid::LinkPtr> > variables_;
-    const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > goals_;
+    const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > > goals_;
     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > nominals_;
     std::vector<std::set<cnoid::BodyPtr> > bodies_;
 

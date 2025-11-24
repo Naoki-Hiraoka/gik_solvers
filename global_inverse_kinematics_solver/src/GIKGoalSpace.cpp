@@ -14,9 +14,11 @@ namespace global_inverse_kinematics_solver{
     bool satisfied = true;
     double squaredDistance = 0.0;
     for(size_t i=0;i<goals_[m].size();i++){
-      goals_[m][i]->updateBounds();
-      if(!goals_[m][i]->isSatisfied()) satisfied = false;
-      if(distance) squaredDistance += std::pow(goals_[m][i]->distance(), 2.0);
+      for(size_t j=0;j<goals_[m][i].size();j++){
+        goals_[m][i][j]->updateBounds();
+        if(!goals_[m][i][j]->isSatisfied()) satisfied = false;
+        if(distance) squaredDistance += std::pow(goals_[m][i][j]->distance(), 2.0);
+      }
     }
 
     if(distance) *distance = std::sqrt(squaredDistance);
@@ -35,8 +37,10 @@ namespace global_inverse_kinematics_solver{
 
     double squaredDistance = 0.0;
     for(size_t i=0;i<goals_[m].size();i++){
-      goals_[m][i]->updateBounds();
-      squaredDistance += std::pow(goals_[m][i]->distance(), 2.0);
+      for(size_t j=0;j<goals_[m][i].size();j++){
+        goals_[m][i][j]->updateBounds();
+        squaredDistance += std::pow(goals_[m][i][j]->distance(), 2.0);
+      }
     }
 
     modelQueue_->push(m);
