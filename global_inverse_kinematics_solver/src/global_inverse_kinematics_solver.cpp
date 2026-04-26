@@ -570,8 +570,21 @@ namespace global_inverse_kinematics_solver{
 
     for (int i=0; i< path->size(); i++){
       std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
-      for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
-        modelMap[*it] = (*it)->clone();
+      {
+        /*
+          cnoid::Body::clone()は、各リンクのメッシュは複製せず、ポインタで共有する.
+          この仕様は高速な複製のために有益である.
+          一方で、同一のメッシュオブジェクトを共有するBody間で、
+          - Body::clone()
+          - Body::~Body()
+          などがスレッドセーフでないことに注意が必要である.
+          solveGIK関数をマルチスレッドから呼ぶ場合に問題になる場合がある.
+        */
+        std::shared_ptr<std::lock_guard<std::mutex> > guard;
+        if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+        for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
+          modelMap[*it] = (*it)->clone();
+        }
       }
       modelMaps.push_back(modelMap); // cloneしたbodyがデストラクトされないように、保管しておく
 
@@ -750,6 +763,17 @@ namespace global_inverse_kinematics_solver{
       if(param.debugLevel >=2){
         std::cerr << "after optimization. path size: " << path->size() << std::endl;
       }
+    }
+
+    {
+      std::shared_ptr<std::lock_guard<std::mutex> > guard;
+      if(param.modelMutex) guard = std::make_shared<std::lock_guard<std::mutex> >(*(param.modelMutex));
+      modelMaps.clear();
+      variabless.clear();
+      constraintss.clear();
+      interConstraintss.clear();
+      goalss.clear();
+      nominalss.clear();
     }
 
     return true;
