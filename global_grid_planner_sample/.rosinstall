@@ -1,0 +1,23 @@
+# for collision check
+- git:
+    local-name: collision_check_libraries
+    uri: https://github.com/Naoki-Hiraoka/collision_check_libraries.git
+- git:
+    local-name: qhulleigen
+    uri: https://github.com/Naoki-Hiraoka/qhulleigen.git
+- git:
+    local-name: choreonoid_collision_tools2
+    uri: https://github.com/Naoki-Hiraoka/choreonoid_collision_tools2.git
+    version: 2.0
+- git:
+    local-name: moveit_extensions
+    uri: https://github.com/Naoki-Hiraoka/moveit_extensions.git
+    version: 1.0
+
+# for jaxon model
+- git:
+    local-name: msl_hand_controller
+    uri: https://gitlab.jsk.imi.i.u-tokyo.ac.jp/hiraoka/msl_hand_controller
+- git:
+    local-name: rtm-ros-robotics/rtmros_hrp2
+    uri: https://github.com/start-jsk/rtmros_hrp2
